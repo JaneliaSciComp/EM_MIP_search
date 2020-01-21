@@ -1,11 +1,11 @@
-# EM_MIP Mask Search [![LinkToJanelia](../images/jrc_logo_180x40.png)](https://www.janelia.org)
+# EM_MIP Mask Search [![LinkToJanelia](https://github.com/JaneliaSciComp/EM_MIP_search/blob/master/images/jrc_logo_180x40.png)](https://www.janelia.org)
 The algorithm created by Hideo Otsuna.  
 FIJI plugins created by Hideo Otsuna and Takashi Kawase.  
 
 ## Before starting
  1. Launch and update FIJI.
  2. Drag and drop `ColorMIP_Mask_Search.jar` on FIJI then quit (the plugin installation).  
- (you can get the .jar file from [here](https://github.com/JaneliaSciComp/ColorMIP_Mask_Search/blob/master/ColorMIP_Mask_Search.jar)) 
+	(you can get the .jar file from [here](https://github.com/JaneliaSciComp/EM_MIP_Search/blob/master/EM_MIP_Mask_Search.jar)) 
 
 ## Startup
 Drag the folder (containing Gal4 color depth MIPs) into fiji, use virtual stack option. 
