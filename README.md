@@ -1,4 +1,4 @@
-# EM_MIP Mask Search ![LinkToJanelia](https://github.com/JaneliaSciComp/EM_MIP_search/blob/master/images/jrc_logo_180x40.png)](https://www.janelia.org)
+# EM_MIP Mask Search [![LinkToJanelia](https://github.com/JaneliaSciComp/EM_MIP_search/blob/master/images/jrc_logo_180x40.png)](https://www.janelia.org)
 The algorithm created by Hideo Otsuna.  
 FIJI plugins created by Hideo Otsuna and Takashi Kawase.  
 
