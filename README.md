@@ -47,4 +47,4 @@ To make sure the position between the mask (the mask neuron) and hits (EM MIP), 
  5. ctrl + click will create a substack with the Result table from the result stack.  
 
 ## Check the EM body ID and the next synaptic connection  
-[Neuprint web site](https://neuprint.janelia.org/)<br/>  
+[Neuprint web site](https://neuprint.janelia.org/)<br/><br/>  
