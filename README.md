@@ -10,10 +10,10 @@ FIJI plugins created by Hideo Otsuna and Takashi Kawase.
 ## Startup
 Download EM datdaset: https://www.janelia.org/open-science/color-depth-mip
 After unzip, there are 5 folders:<br/>
-• EMhemibrain_CDM_JRC2018U_radi1: EM hemibrain CDM with radius 1, Poor searching ability, good looking but the buttons are too small.<br/>
-• EMhemibrain_CDM_JRC2018U_radi2: EM hemibrain CDM with radius 2, Good searching ability, buttons are nice size but the cell body is too big. <br/>
-• EMhemibrain_SWC_2018U_12232019: SWC files, open with [![VVDviewer] (https://github.com/takashi310/VVD_Viewer/releases)<br/>
-• Gradient_tif_JRC2018:Unzip and copy the folder to local SSD. This file needs for LM-EM shape mathching.<br/>
+• EMhemibrain_CDM_JRC2018U_radi1: EM hemibrain CDM with radius 1, Poor searching ability, good looking but the buttons are too small.<br/><br/>
+• EMhemibrain_CDM_JRC2018U_radi2: EM hemibrain CDM with radius 2, Good searching ability, buttons are nice size but the cell body is too big. <br/><br/>
+• EMhemibrain_SWC_2018U_12232019: SWC files, open with [![VVDviewer] (https://github.com/takashi310/VVD_Viewer/releases)<br/><br/>
+• Gradient_tif_JRC2018:Unzip and copy the folder to local SSD. This file needs for LM-EM shape mathching.<br/><br/>
 • NBLAST_EMhemibrain_1223_2019: NBLATST file. NBLAST Fiji plugin: (https://github.com/JaneliaSciComp/NBLAST_Scripts/releases)<br/>
 <br/>
 Drag the "EMhemibrain_CDM_JRC2018U_radi2" folder (containing EM hemibrain color depth MIPs) into fiji, use virtual stack option. 
