@@ -37,14 +37,14 @@ To make sure the position between the mask (the mask neuron) and hits (EM MIP), 
  2. Select the two windows to synchronize.  
 <!-- dummy -->
 
-## Check the EM body ID and the next synaptic connection  
-[Neuprint web site](https://neuprint.janelia.org/)<br/>  
 
-## Create a list of candidate lines
+## Create a list of hit result
 `realtime_Result_ctrl_click_substack.ijm` is useful for quickly making a list of lines and the substack while scrolling through the stack of potential hits. 
  1. Open `realtime_Result_ctrl_click_substack.ijm`.
  2. Click window with colorMIP search result stacks.
  3. Run macro (only accepts one open window). Then Result window will be open.
  4. Shift + click on the result stack will add the image name into the Result table.
  5. ctrl + click will create a substack with the Result table from the result stack.
- 
+ <br/>
+## Check the EM body ID and the next synaptic connection  
+[Neuprint web site](https://neuprint.janelia.org/)<br/>  
