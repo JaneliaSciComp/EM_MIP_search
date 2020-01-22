@@ -25,7 +25,7 @@ Drag the "EMhemibrain_CDM_JRC2018U_radi2" folder (containing EM hemibrain color 
 
 ## Search stacks with mask
 Plugins > EM MIP Mask Search  
-[![ScreenShot0](../images/screen.png)]
+![ScreenShot0](https://github.com/JaneliaSciComp/EM_MIP_search/blob/master/images/screen.png)
 ### considerations/ tips:
  - Show log // -> show NaN for log may be useful for a first pass, just to keep track of all slices.
 				- If background is too high in the mask, increase the Threshold for mask (max value is 255).  
