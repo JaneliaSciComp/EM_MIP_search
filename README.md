@@ -4,7 +4,7 @@ FIJI plugins created by Hideo Otsuna and Takashi Kawase.
 
 ## Before starting
  1. Launch and update FIJI.
- 2. Drag and drop `ColorMIP_Mask_Search.jar` on FIJI then quit (the plugin installation).  
+ 2. Drag and drop `EM_MIP_Search.jar` on FIJI then quit (the plugin installation).  
 	(you can get the .jar file from [here](https://github.com/JaneliaSciComp/EM_MIP_Search/blob/master/EM_MIP_Mask_Search.jar)) 
 
 ## Startup
@@ -37,7 +37,7 @@ To make sure the position between the mask (the mask neuron) and hits (EM MIP), 
  1. Analyze > Tools > Synchronize Windows.  
  2. Select the two windows to synchronize.  
 <!-- dummy -->
-![ScreenShot1](../images/scr1.png)  
+
 <br />
 
 ## Create a list of candidate lines
