@@ -8,7 +8,7 @@ FIJI plugins created by Hideo Otsuna and Takashi Kawase.
 	(you can get the .jar file from [here](https://github.com/JaneliaSciComp/EM_MIP_Search/blob/master/EM_MIP_Mask_Search.jar)) 
 
 ## Startup
-Download EM datdaset: https://www.janelia.org/open-science/color-depth-mip
+Download EM datdaset: (https://www.janelia.org/open-science/color-depth-mip)<br/>
 After unzip, there are 5 folders:<br/><br/>
 • EMhemibrain_CDM_JRC2018U_radi1: EM hemibrain CDM with radius 1, Poor searching ability, good looking but the buttons are too small.<br/><br/>
 • EMhemibrain_CDM_JRC2018U_radi2: EM hemibrain CDM with radius 2, Good searching ability, buttons are nice size but the cell body is too big. <br/><br/>
