@@ -1,4 +1,4 @@
-# EM_MIP Mask Search [![LinkToJanelia (https://github.com/JaneliaSciComp/EM_MIP_search/blob/master/images/jrc_logo_180x40.png)](https://www.janelia.org)
+# EM_MIP Mask Search [![LinkToJanelia] (https://github.com/JaneliaSciComp/EM_MIP_search/blob/master/images/jrc_logo_180x40.png)](https://www.janelia.org)
 The algorithm created by Hideo Otsuna.  
 FIJI plugins created by Hideo Otsuna and Takashi Kawase.  
 
@@ -8,24 +8,24 @@ FIJI plugins created by Hideo Otsuna and Takashi Kawase.
 	(you can get the .jar file from [here](https://github.com/JaneliaSciComp/EM_MIP_Search/blob/master/EM_MIP_Mask_Search.jar)) 
 
 ## Startup
-			Download EM datdaset: https://www.janelia.org/open-science/color-depth-mip
-			After unzip, there are 5 folders:
-			• EMhemibrain_CDM_JRC2018U_radi1: EM hemibrain CDM with radius 1, Poor searching ability, good looking but the buttons are too small.
-			• EMhemibrain_CDM_JRC2018U_radi2: EM hemibrain CDM with radius 2, Good searching ability, buttons are nice size but the cell body is too big. 
-			• EMhemibrain_SWC_2018U_12232019: SWC files, open with [![VVDviewer] (https://github.com/takashi310/VVD_Viewer/releases)
-			• Gradient_tif_JRC2018:Unzip and copy the folder to local SSD. This file needs for LM-EM shape mathching.
-				• NBLAST_EMhemibrain_1223_2019: NBLATST file. NBLAST Fiji plugin: https://github.com/JaneliaSciComp/NBLAST_Scripts/releases
-				
-			Drag the "EMhemibrain_CDM_JRC2018U_radi2" folder (containing EM hemibrain color depth MIPs) into fiji, use virtual stack option. 
+Download EM datdaset: https://www.janelia.org/open-science/color-depth-mip
+After unzip, there are 5 folders:
+• EMhemibrain_CDM_JRC2018U_radi1: EM hemibrain CDM with radius 1, Poor searching ability, good looking but the buttons are too small.
+• EMhemibrain_CDM_JRC2018U_radi2: EM hemibrain CDM with radius 2, Good searching ability, buttons are nice size but the cell body is too big. 
+• EMhemibrain_SWC_2018U_12232019: SWC files, open with [![VVDviewer] (https://github.com/takashi310/VVD_Viewer/releases)
+• Gradient_tif_JRC2018:Unzip and copy the folder to local SSD. This file needs for LM-EM shape mathching.
+• NBLAST_EMhemibrain_1223_2019: NBLATST file. NBLAST Fiji plugin: https://github.com/JaneliaSciComp/NBLAST_Scripts/releases
+
+Drag the "EMhemibrain_CDM_JRC2018U_radi2" folder (containing EM hemibrain color depth MIPs) into fiji, use virtual stack option. 
 
 ## Create mask of neuron of interest from the GAL4 color depth MIP (CDM)
-			1. Open a single tiff that containing the neuron from the GAL4 image aligned to JRC2018 template space. (The newly aligned CDM also in https://www.janelia.org/open-science/color-depth-mip)
+1. Open a single tiff that containing the neuron from the GAL4 image aligned to JRC2018 template space. (The newly aligned CDM also in https://www.janelia.org/open-science/color-depth-mip)
  2. Trace area of interest on a duplicated slice (use polygon tool and try to be as accurate as possible).
  3. Edit > Clear Outside.
 
 ## Search stacks with mask
 Plugins > EM MIP Mask Search  
-				![ScreenShot0](../images/screen.png)
+[![ScreenShot0](../images/screen.png)]
 ### considerations/ tips:
  - Show log // -> show NaN for log may be useful for a first pass, just to keep track of all slices.
 				- If background is too high in the mask, increase the Threshold for mask (max value is 255).  
