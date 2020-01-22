@@ -38,6 +38,8 @@ To make sure the position between the mask (the mask neuron) and hits (EM MIP), 
 <!-- dummy -->
 
 <br />
+## Check the EM body ID and the next synaptic connection
+[Neuprint web site](https://neuprint.janelia.org/)<br/>
 
 ## Create a list of candidate lines
 `realtime_Result_ctrl_click_substack.ijm` is useful for quickly making a list of lines and the substack while scrolling through the stack of potential hits. 
