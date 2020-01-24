@@ -239,7 +239,7 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 		
 		gd.setInsets(20, 0, 0);
 		gd.addNumericField("Positive PX % Threshold: EM matching is 0.5-1.5%", pixThresE, 4);
-		gd.addSlider("Pix Color Fluctuation, +- Z slice", 0, 10, pixfluE);
+		gd.addSlider("Pix Color Fluctuation, ± Z slice", 0, 10, pixfluE);
 		
 		gd.setInsets(20, 0, 0);
 		gd.addStringField("Gradient file path: ", gradientDIR_,50);
