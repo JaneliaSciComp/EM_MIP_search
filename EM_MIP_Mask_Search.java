@@ -566,6 +566,12 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 									IJ.showProgress((double)slice/(double)f_th_snum);
 									
 									try {
+										
+										if(IJ.escapePressed()){
+											IJ.log("esc canceled");
+											return out;
+										}
+										
 										RandomAccessFile f = new RandomAccessFile(datapath, "r");
 										TiffDecoder tfd = new TiffDecoder(directory, vst.getFileName(slice));
 										if (tfd == null) continue;
@@ -1459,7 +1465,7 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 			}
 			
 			//IJ.runMacroFile(""+plugindir+"Macros/CDM_area_measure.ijm");
-		}else{
+		}else if(EMsearch==true && posislice>0){
 			newimpOri.show();
 		}
 		//	System.gc();
