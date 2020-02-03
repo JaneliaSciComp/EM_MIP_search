@@ -2183,7 +2183,7 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 			IJ.run(imp10pxRGBmask,"Maximum...", "radius=10");
 			
 			String lastcha=gradientDIR.substring(gradientDIR.length()-1,gradientDIR.length());
-			String OSTYPE = System.getProperty("os.name").toLowerCase();
+			final String OSTYPE = System.getProperty("os.name").toLowerCase();
 			//						IJ.log("OSTYPE; "+OSTYPE);
 			
 			String gradientDIRopen=gradientDIR;
