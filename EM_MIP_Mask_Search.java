@@ -415,7 +415,7 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 			return;
 		}
 		
-		if(height==heightD){
+		if(height!=heightD){
 			IJ.showMessage ("Image size is different between the mask and data!  mask height; "+height+" px   data height; "+heightD+" px");
 			IJ.log("Image size is different between the mask and data!");
 			return;
