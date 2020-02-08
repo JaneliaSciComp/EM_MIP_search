@@ -225,7 +225,7 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 		gd.setInsets(0, 340, 0);
 		gd.addCheckbox("1.Add mirror search", mirror_maskE);
 		gd.setInsets(0, 340, 0);
-		gd.addCheckbox("ShowFlip hits in a same side", showFlip);
+		gd.addCheckbox("ShowFlip hits on a same side", showFlip);
 		
 		gd.setInsets(20, 0, 0);
 		gd.addChoice("Negative Mask", negtitles, negtitles[NegMaskE]); //Negative MaskE
