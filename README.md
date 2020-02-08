@@ -28,7 +28,8 @@ Plugins > EM MIP Mask Search
 ![ScreenShot0](https://github.com/JaneliaSciComp/EM_MIP_search/blob/master/images/screen.png)
 ### considerations/ tips:
 - If background is too high in the mask, increase the Threshold for mask (max value is 255).  
-- Pix Color Fluctuation, +-Z slice: better to be 1 for precise matchimng.  
+- "ShowFlip hits on the same side" does X-filp of the image the hit with flipping, "Flip" mark will appear on the top center of the image.
+- Pix Color Fluctuation, ±Z slice: better to be 1 for precise matchimng.  
 - The search can stop by pushing escape.  
 
 ## Synchronize windows
