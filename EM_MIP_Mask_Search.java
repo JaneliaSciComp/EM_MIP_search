@@ -9,6 +9,14 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.atomic.AtomicLong;
 
 import java.io.File;
 import java.nio.file.Files;
@@ -17,7 +25,6 @@ import java.nio.file.Paths;
 import java.io.IOException;
 import java.awt.*;
 
-
 import ij.*;
 import ij.gui.*;
 import ij.io.*;
@@ -25,13 +32,14 @@ import ij.io.*;
 import ij.plugin.filter.*;
 import ij.process.*;
 import ij.process.ImageProcessor;
+import ij.plugin.frame.RoiManager;
 
 public class EM_MIP_Mask_Search implements PlugInFilter
 {
 	ImagePlus imp, imp2;
 	ImageProcessor ip1, nip1, ip2, ip3, ip4, ip5, ip6, ip33;
-	int pix1=0, CheckPost,UniqueLineName=0,IsPosi;
-	int pix3=0,Check=0,arrayPosition=0,dupdel=1,FinalAdded=1,enddup=0;;
+	int pix1=0, CheckPost,UniqueLineName=0,IsPosi,threadNumE=0;
+	int pix3=0,Check=0,arrayPosition=0,dupdel=1,FinalAdded=1,enddup=0;
 	ImagePlus newimp, newimpOri;
 	String linename,LineNo, LineNo2,preLineNo="A",FullName,LineName,arrayName,PostName;
 	String args [] = new String[10],PreFullLineName,ScorePre,TopShortLinename;
@@ -158,7 +166,7 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 		boolean GCONE=(boolean)Prefs.get("GCONE.boolean",false);
 		boolean ShowCoE=(boolean)Prefs.get("ShowCoE.boolean",false);
 		int NumberSTintE=(int)Prefs.get("NumberSTintE.int",0);
-		int threadNumE=(int)Prefs.get("threadNumE.int",8);
+		threadNumE=(int)Prefs.get("threadNumE.int",8);
 		String gradientDIR_=(String)Prefs.get("gradientDIR_.String","");
 		boolean GradientOnTheFly_ = (boolean)Prefs.get("GradientOnTheFly_.boolean", false);
 		int maxnumber=(int)Prefs.get("maxnumber.int",100);
@@ -224,6 +232,7 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 		gd.addSlider("1.Threshold for mask", 0, 255, ThresmE);
 		gd.setInsets(0, 340, 0);
 		gd.addCheckbox("1.Add mirror search", mirror_maskE);
+
 		gd.setInsets(0, 340, 0);
 		gd.addCheckbox("ShowFlip hits on a same side", showFlip);
 		
@@ -237,13 +246,13 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 		gd.addChoice("EM_color_MIP Data for the search", titles, titles[datafileE]); //Data
 		
 		//gd.addNumericField("Threshold", slicenumber,0);
-	//	gd.addSlider("3.Threshold for data", 0, 255, ThresE);
-	//	gd.addMessage("");
+		//	gd.addSlider("3.Threshold for data", 0, 255, ThresE);
+		//	gd.addMessage("");
 		//	gd.addSlider("100x % of Positive PX Threshold", (double) 0, (double) 10000, pixThresE);
 		
 		gd.setInsets(20, 0, 0);
 		gd.addNumericField("Positive PX % Threshold: EM matching is 0.5-1.5%", pixThresE, 4);
-		gd.addSlider("Pix Color Fluctuation, +- Z slice", 0, 10, pixfluE);
+		gd.addSlider("Pix Color Fluctuation, ± Z slice", 0, 10, pixfluE);
 		
 		gd.setInsets(20, 0, 0);
 		gd.addStringField("Gradient file path: ", gradientDIR_,50);
@@ -268,9 +277,9 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 		String []	shitstr = {"0px    ", "2px    ", "4px    "};
 		gd.addRadioButtonGroup("XY Shift: ", shitstr, 1, 3, shitstr[xyshiftE/2]);
 		
-	//	gd.setInsets(0, 362, 5);
-	//	String []	NumberST = {"%", "absolute value"};
-	//	gd.addRadioButtonGroup("Scoring method; ", NumberST, 1, 2, NumberST[NumberSTintE]);
+		//	gd.setInsets(0, 362, 5);
+		//	String []	NumberST = {"%", "absolute value"};
+		//	gd.addRadioButtonGroup("Scoring method; ", NumberST, 1, 2, NumberST[NumberSTintE]);
 		
 		gd.setInsets(20, 372, 0);
 		gd.addCheckbox("ShowLog",logonE);
@@ -295,7 +304,7 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 		NegThresmE=(int)gd.getNextNumber();
 		mirror_negmaskE = gd.getNextBoolean();
 		datafileE = gd.getNextChoiceIndex(); //Color MIP
-	//	ThresE=(int)gd.getNextNumber();
+		//	ThresE=(int)gd.getNextNumber();
 		pixThresE=(double)gd.getNextNumber();
 		pixfluE=(double)gd.getNextNumber();
 		gradientDIR_=gd.getNextString();
@@ -316,12 +325,11 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 		boolean EMsearch = true;
 		
 		IJ.log("gradientDIR_; "+gradientDIR_);
-		
+		IJ.log("threadNumE; "+threadNumE);
 		File file = new File(gradientDIR_);
 		boolean graExt = file.exists();
 		
 		if(graExt==false){
-			
 			IJ.log("Choose gradient tiff directory");
 			DirectoryChooser dirGradient = new DirectoryChooser("Gradient tiff directory");
 			gradientDIR_ = dirGradient.getDirectory();
@@ -329,8 +337,13 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 		Prefs.set("gradientDIR_.String",gradientDIR_);
 		Prefs.set("GradientOnTheFly_.boolean", GradientOnTheFly_);
 		
-		if(GCONE==true)
-		System.gc();
+		if(GCONE==true){
+	//		XX:+UseG1GC;
+			System.gc();
+			System.gc();
+	//		-XX:+UnlockExperimentalVMOptions;
+	//		-XX:InitiatingHeapOccupancyPercent=5;
+		}
 		
 		if(logonE==true){
 			GenericDialog gd2 = new GenericDialog("log option");
@@ -402,6 +415,21 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 		
 		int width = imask.getWidth();
 		int height = imask.getHeight();
+		
+		int widthD = idata.getWidth();
+		int heightD = idata.getHeight();
+		
+		if(width!=widthD){
+			IJ.showMessage ("Image size is different between the mask and data!  mask width; "+width+" px   data width; "+widthD+" px");
+			IJ.log("Image size is different between the mask and data!");
+			return;
+		}
+		
+		if(height!=heightD){
+			IJ.showMessage ("Image size is different between the mask and data!  mask height; "+height+" px   data height; "+heightD+" px");
+			IJ.log("Image size is different between the mask and data!");
+			return;
+		}
 		
 		if(IJ.escapePressed())
 		return;
@@ -563,6 +591,12 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 									IJ.showProgress((double)slice/(double)f_th_snum);
 									
 									try {
+										
+										if(IJ.escapePressed()){
+											IJ.log("esc canceled");
+											return out;
+										}
+										
 										RandomAccessFile f = new RandomAccessFile(datapath, "r");
 										TiffDecoder tfd = new TiffDecoder(directory, vst.getFileName(slice));
 										if (tfd == null) continue;
@@ -610,6 +644,7 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 											IJ.showStatus("Number of Hits (estimated): "+out.size()*fthreadnum);
 										}
 										f.close();
+									//	System.gc();
 									} catch (IOException e) {
 										continue;
 									}
@@ -799,7 +834,7 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 				for(int LineInt=0; LineInt<posislice; LineInt++)
 				
 				if(DUPlogonE==true)
-		//		IJ.log(LineInt+"  "+LineNameArray[LineInt]);
+				//		IJ.log(LineInt+"  "+LineNameArray[LineInt]);
 				
 				for(int Fposi=0; Fposi<=posislice; Fposi++){
 					
@@ -1423,7 +1458,7 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 				}
 				
 				newimpOri = new ImagePlus("Original_RGB.tif_"+pixThresdub2+" %_"+titles[MaskE]+"", OrigiStackfinal);
-			
+				
 			}
 			
 		}//if(posislice>0){
@@ -1444,13 +1479,23 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 			if(shownormal==true)
 			newimpOri.show();
 			
-			ImagePlus newimp2 = CDM_area_measure (newimpOri, imask,gradientDIR_,GradientOnTheFly_,ThresmE,maxnumber,showFlip);
-			//	newimpOri.close();
+			RoiManager rois = new RoiManager(true);
+			rois.runCommand(imask,"Select All");
+			
+			ImagePlus newimp2 = CDM_area_measure (newimpOri, imask,gradientDIR_,GradientOnTheFly_,ThresmE,maxnumber,mirror_maskE,showFlip,threadNumE);
+			
+			if(shownormal==false){
+				newimpOri.unlock();
+				newimpOri.close();
+			}
 			
 			//IJ.runMacroFile(""+plugindir+"Macros/CDM_area_measure.ijm");
-		}else{
+		}else if(EMsearch==true && posislice>0){
 			newimpOri.show();
-		}
+		}else
+		IJ.showMessage("no positive hit");
+		imask.unlock();
+		
 		//	System.gc();
 	} //public void run(ImageProcessor ip){
 	
@@ -2083,10 +2128,9 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 		
 	}//public class ColorMIPMaskCompare {
 	
-	ImagePlus CDM_area_measure (ImagePlus impstack, ImagePlus impmask, String gradientDIR, boolean rungradientonthefly, int ThresmEf, int maxnumberF, boolean showFlipF){
+	ImagePlus CDM_area_measure (ImagePlus impstack, ImagePlus impmask, final String gradientDIR, final boolean rungradientonthefly, final int ThresmEf, final int maxnumberF,final boolean mirror_maskEF, boolean showFlipF, final int threadNumEF){
 		
-		int thread_num_=0; int Threval=0; int stackslicenum=0;
-		ImagePlus imp,impgradient;
+		int Threval=0; int stackslicenum=0;
 		
 		int wList [] = WindowManager.getIDList();
 		if (wList==null || wList.length<2) {
@@ -2099,7 +2143,7 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 		stackslicenum = info[3];//52
 		
 		
-		ImageStack originalresultstack=impstack.getStack();
+		final ImageStack originalresultstack=impstack.getStack();
 		long startT=System.currentTimeMillis();
 		if(stackslicenum>1){
 			//fill name
@@ -2131,39 +2175,57 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 			int test=1;
 			
 			ImagePlus impgradientMask = impmask.duplicate();
-			impgradientMask.hide();
+			ImagePlus imp10pxRGBmask = impmask.duplicate();
+			
+			
+			
 			ImageConverter ic = new ImageConverter(impgradientMask);
 			ic.convertToGray8();
 			
 			ImageProcessor EightIMG = impgradientMask.getProcessor();
+			ImageProcessor IP10pxRGBmask = imp10pxRGBmask.getProcessor();
 			
 			info= impgradientMask.getDimensions();
 			int WW = info[0];
 			int HH = info[1];
-			int sumpx= WW*HH;
+			final int sumpx= WW*HH;
 			for(int ipix=0; ipix<sumpx; ipix++){// 255 binary mask creation
 				if(EightIMG.get(ipix)>ThresmEf){
 					EightIMG.set(ipix, 255);
 				}else
 				EightIMG.set(ipix, 0);
+				
+				int RGBpix=IP10pxRGBmask.get(ipix);
+				
+				int redval = (RGBpix>>>16) & 0xff;
+				int greenval = (RGBpix>>>8) & 0xff;
+				int blueval = RGBpix & 0xff;
+				
+				if(redval<=ThresmEf && greenval<=ThresmEf && blueval<=ThresmEf )
+				IP10pxRGBmask.set(ipix, -16777216);
+				
 			}
 			
-		//		if(test==1){
-		//			impgradientMask.show();
-		//			return impgradientMask;
-		//		}
+			//		if(test==1){
+			//			impgradientMask.show();
+			//			return impgradientMask;
+			//		}
 			
 			IJ.run(impgradientMask,"Max Filter2D", "expansion=10 cpu=1 xyscaling=1");
+			//		IJ.run(imp10pxRGBmask, "Max Filter2D RGB", "expansion=10 cpu=1 xyscaling=1");// RGB10x dilation
+			
+			IJ.run(imp10pxRGBmask,"Maximum...", "radius=10");
 			
 			String lastcha=gradientDIR.substring(gradientDIR.length()-1,gradientDIR.length());
-			String OSTYPE = System.getProperty("os.name").toLowerCase();
+			final String OSTYPE = System.getProperty("os.name").toLowerCase();
 			//						IJ.log("OSTYPE; "+OSTYPE);
+			
+			String gradientDIRopen=gradientDIR;
 			
 			if(OSTYPE.equals("mac os x")){
 				if(!lastcha.equals("/"))
-				gradientDIR=gradientDIR+"/";
-				String gradientDIR_=gradientDIR;
-				Prefs.set("gradientDIR_.String",gradientDIR_);
+				gradientDIRopen=gradientDIR+"/";
+				Prefs.set("gradientDIR_.String",gradientDIRopen);
 			}
 			
 			int winindex = OSTYPE.indexOf("windows");
@@ -2172,117 +2234,177 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 			if(winindex!=-1){
 				if(!lastcha.equals(filesepST)){
 					
-					gradientDIR=gradientDIR+"\\";
+					gradientDIRopen=gradientDIR+"\\";
 					IJ.log("win added, File.separator; "+File.separator+"   lastcha; "+lastcha);
-					String gradientDIR_=gradientDIR;
-					Prefs.set("gradientDIR_.String",gradientDIR_);
+					Prefs.set("gradientDIR_.String",gradientDIRopen);
 				}
 			}
 			
+			//// open gradient mask ////////////////////////////////
 			ImagePlus hemiMIPmask;
 			
-			File fMIP = new File(gradientDIR+"MAX_hemi_to_JRC2018U_fineTune.png");
+			File fMIP = new File(gradientDIRopen+"MAX_hemi_to_JRC2018U_fineTune.png");
 			if (!fMIP.exists()){
-				IJ.log("The file cannot open; "+gradientDIR+"MAX_hemi_to_JRC2018U_fineTune.png");
+				IJ.log("The file cannot open; "+gradientDIRopen+"MAX_hemi_to_JRC2018U_fineTune.png");
 				return impgradientMask;
 				
 			}else{
 				
-				hemiMIPmask = IJ.openImage(gradientDIR+"MAX_hemi_to_JRC2018U_fineTune.png");
+				hemiMIPmask = IJ.openImage(gradientDIRopen+"MAX_hemi_to_JRC2018U_fineTune.png");
 				
 			}
 			
 			ImageProcessor iphemiMIP = hemiMIPmask.getProcessor();
 			
+			
+			/// make flipped mask 10px dilated image ////////////////////////////
 			ImagePlus MaskFlipIMP = impgradientMask.duplicate();
 			ImageProcessor ipgradientFlipMask=MaskFlipIMP.getProcessor();
+			ImagePlus RGBMaskFlipIMP = imp10pxRGBmask.duplicate();
+			ImageProcessor IPflip10pxRGBmask=RGBMaskFlipIMP.getProcessor();
 			
-			ipgradientFlipMask.flipHorizontal();
-			
-			
-			//		if(test==1){
-			
-			//			MaskFlipIMP.show();
-			//			return impgradientMask; 
-			//		}
-			
-			EightIMG = DeleteOutSideMask(EightIMG,iphemiMIP); // delete out side of emptyhemibrain region
-			ipgradientFlipMask = DeleteOutSideMask(ipgradientFlipMask,iphemiMIP); // delete out side of emptyhemibrain region
-			
-			
-			ic = new ImageConverter(impgradientMask);
-			ic.convertToGray16();
-			EightIMG = impgradientMask.getProcessor();
-			
-			ImageConverter ic2 = new ImageConverter(MaskFlipIMP);
-			ic2.convertToGray16();
-			ipgradientFlipMask = MaskFlipIMP.getProcessor();
-			
-			
-			for(int ipix=0; ipix<sumpx; ipix++){// 255 binary mask creation, posi signal become 0 INV
-				if(EightIMG.get(ipix)<1)
-				EightIMG.set(ipix, 65535);
-				else 
-				EightIMG.set(ipix, 0);
+			if(mirror_maskEF){
+				ipgradientFlipMask.flipHorizontal();
 				
-				if(ipgradientFlipMask.get(ipix)<1)
-				ipgradientFlipMask.set(ipix, 65535);
-				else 
-				ipgradientFlipMask.set(ipix, 0);
+				
+				IPflip10pxRGBmask.flipHorizontal();// flipped RGBmask
+				//		if(test==1){
+				
+				//			MaskFlipIMP.show();
+				//			return impgradientMask; 
+				//		}
+				
+				EightIMG = DeleteOutSideMask(EightIMG,iphemiMIP); // delete out side of emptyhemibrain region
+				ipgradientFlipMask = DeleteOutSideMask(ipgradientFlipMask,iphemiMIP); // Flipped mask; delete out side of emptyhemibrain region
+				
+				IP10pxRGBmask = DeleteOutSideMask(IP10pxRGBmask,iphemiMIP); // RGBmask; delete out side of EM mask
+				IPflip10pxRGBmask = DeleteOutSideMask(IPflip10pxRGBmask,iphemiMIP); // flipped RGBmask; delete out side of EM mask
+				
+		//		if(test==1){
+		//			RGBMaskFlipIMP.show();// 
+		//			return RGBMaskFlipIMP; 
+		//		}
+				
+				ic = new ImageConverter(impgradientMask);
+				ic.convertToGray16();
+				EightIMG = impgradientMask.getProcessor();
+				
+				ImageConverter ic2 = new ImageConverter(MaskFlipIMP);
+				ic2.convertToGray16();
+				ipgradientFlipMask = MaskFlipIMP.getProcessor();
+				
+				
+				
+				for(int ipix=0; ipix<sumpx; ipix++){// 255 binary mask creation, posi signal become 0 INV
+					if(EightIMG.get(ipix)<1)
+					EightIMG.set(ipix, 65535);
+					else 
+					EightIMG.set(ipix, 0);
+					
+					if(ipgradientFlipMask.get(ipix)<1)
+					ipgradientFlipMask.set(ipix, 65535);
+					else 
+					ipgradientFlipMask.set(ipix, 0);
+				}
+				
+				ipgradientFlipMask=gradientslice(ipgradientFlipMask); // make Flip gradient mask, Flipped ver of 
+				
+				//	if(test==1){
+				//		impgradientMask.show();// 
+				//		MaskFlipIMP.show();// 
+				//		return impgradientMask; 
+				//	}
+			}else{//	if(mirror_maskEF){
+				
+				for(int ipix=0; ipix<sumpx; ipix++){// 255 binary mask creation, posi signal become 0 INV
+					if(EightIMG.get(ipix)<1)
+					EightIMG.set(ipix, 65535);
+					else 
+					EightIMG.set(ipix, 0);
+					
+				}
 			}
+			EightIMG=gradientslice(EightIMG); // make gradient mask, EightIMG is 0 center & gradient mask of original mask 
 			
-			EightIMG=gradientslice(EightIMG); // make gradient mask
-			ipgradientFlipMask=gradientslice(ipgradientFlipMask); // make Flip gradient mask
-			
-			//		if(test==1){
-			//		impgradientMask.show();
-			//		MaskFlipIMP.show();
-			//			return impgradientMask; 
-			//		}
+			final ImagePlus impRGBMaskFlipfinal = RGBMaskFlipIMP;
+			final ImageProcessor IPflip10pxRGBmaskFinal = IPflip10pxRGBmask;
+			final ImageProcessor ipgradientFlipMaskFinal=ipgradientFlipMask;
 			impgradientMask.hide();
+			
+			/// impgradientMask （フリップ）と EightIMG に z-distance の negative value を加える
 			
 			ImagePlus Value1maskIMP = impmask.duplicate();
 			
 			ic = new ImageConverter(Value1maskIMP);
 			ic.convertToGray16();
 			
+		
+			
+			Value1maskIMP = setsignal1(Value1maskIMP,sumpx);
+			
 			ImageProcessor ipValue1mask =Value1maskIMP.getProcessor();
-			
-			setsignal1(ipValue1mask,sumpx);
-			
-		//	if(test==1){
-		//		Value1maskIMP.show();
-		//		return Value1maskIMP; 
-		//				}
-			
+			//	if(test==1){
+			//		Value1maskIMP.show();
+			//		return Value1maskIMP; 
+			//				}
 			
 			ImagePlus impFlipValue1mask =  Value1maskIMP.duplicate();
 			ImageProcessor ipFlipValue1mask =impFlipValue1mask.getProcessor();
-			ipFlipValue1mask.flipHorizontal();
-			ipFlipValue1mask = DeleteOutSideMask(ipFlipValue1mask,iphemiMIP); // delete out side of emptyhemibrain region
 			
+			if(mirror_maskEF){
+				ipFlipValue1mask.flipHorizontal();
+				ipFlipValue1mask = DeleteOutSideMask(ipFlipValue1mask,iphemiMIP); // delete out side of emptyhemibrain region
+			}
+			
+			hemiMIPmask.unlock();
+			hemiMIPmask.close();
 			
 			int [] info2= impstack.getDimensions();
 			
 			int WW2 = info[0];
 			int HH2 = info[1];
 			
-			int PositiveStackSlice=stackslicenum;
+			int PositiveStackSlicePre=stackslicenum;
 			
-			if(PositiveStackSlice>maxnumberF+50)
-			PositiveStackSlice=maxnumberF+50;
+			if(PositiveStackSlicePre>maxnumberF+50)
+			PositiveStackSlicePre=maxnumberF+50;
 			
+			final int PositiveStackSlice=PositiveStackSlicePre;
+			
+			IJ.log("2317 PositiveStackSlice; "+String.valueOf(PositiveStackSlice));
 			String [] namearray=new String [PositiveStackSlice];
 			String [] totalnamearray=new String[PositiveStackSlice];
 			double[] scorearray = new double[PositiveStackSlice];
 			
-			String [] gaparray=new String[PositiveStackSlice];
+			final String [] gaparray=new String[PositiveStackSlice];
 			
 			double maxScore=0;
 			long maxAreagap=0;
-			ImageStack Stack2stack=impstack.getStack();
-			ImageProcessor ipSLICE2, SLICE2F;
+			ImageStack Stack2stack;
+		
+			/// name array creation ///////////////////
+			for(int iname=1; iname<=PositiveStackSlice; iname++){
+				
+				namearray[iname-1] = originalresultstack.getSliceLabel(iname);
+				
+				int spaceIndex=namearray[iname-1].indexOf(" ");
+				if(spaceIndex!=-1){// replace slice label
+					namearray[iname-1]=namearray[iname-1].replace(" ", "_");
+					originalresultstack.setSliceLabel(namearray[iname-1],iname);
+				}
+				
+			//		IJ.log(String.valueOf(iname));
+				
+				int undeIndex=namearray[iname-1].indexOf("_");
+				
+				scorearray[iname-1]=Double.parseDouble(namearray[iname-1].substring(0,undeIndex));
+				
+				if(maxScore<scorearray[iname-1])
+				maxScore=scorearray[iname-1];
+				
+			}//for(int iname=0; iname<PositiveStackSlice; iname++){
 			
+			IJ.log("2349");
 			if(rungradientonthefly==true){
 				ImagePlus Stack2IMP =impstack.duplicate();
 				
@@ -2337,247 +2459,279 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 				long gapS = (timeend-timestart)/1000;
 				IJ.log("Gradient creation; "+gapS+" second");
 				
-			}//if(rungradientonthefly==1){
+			}else//if(rungradientonthefly==1){
+			Stack2stack=impstack.getStack();
+			
+			final ImageStack Stack2stackFinal = Stack2stack;
 			
 			IJ.log("stackslicenum; "+stackslicenum+"  PositiveStackSlice; "+PositiveStackSlice);
+			long startTRGB =System.currentTimeMillis();
+			final AtomicInteger ai = new AtomicInteger(1);
+			final Thread[] threads = newThreadArray();
 			
+		//	IJ.log("threads.length; "+threads.length);
 			
-			for(int isli=1; isli<PositiveStackSlice+1; isli++){
-				ImageProcessor ipresult = originalresultstack.getProcessor(isli);
-				ImagePlus SLICEtifimp = new ImagePlus ("SLICE.tif",ipresult);
-				
-				
-				namearray[isli-1] = originalresultstack.getSliceLabel(isli);
-				
-				int spaceIndex=namearray[isli-1].indexOf(" ");
-				if(spaceIndex!=-1){// replace slice label
-					namearray[isli-1]=namearray[isli-1].replace(" ", "_");
-					originalresultstack.setSliceLabel(namearray[isli-1],isli);
-				}
-				
-				//	IJ.log(String.valueOf(isli));
-				
-				int undeIndex=namearray[isli-1].indexOf("_");
-				
-				scorearray[isli-1]=Double.parseDouble(namearray[isli-1].substring(0,undeIndex));
-				
-				if(maxScore<scorearray[isli-1])
-				maxScore=scorearray[isli-1];
-				
-				//	if(test==1){
-				
-				//		return;
-				//	}
-				
-				//multipy image creation/////////////
-				ic = new ImageConverter(SLICEtifimp);
-				ic.convertToGray16();
-				
-				ImageProcessor SLICEtifip = SLICEtifimp.getProcessor();
-				
-				setsignal1(SLICEtifip,sumpx);
-			//	if(test==1 && isli==6){
-			//		SLICEtifimp.show();
-			//		return SLICEtifimp;
-			//	}
-				ImageProcessor ipgradientMask = impgradientMask.getProcessor();
-				
-				for(int ivx=0; ivx<sumpx; ivx++){
+			final ImageProcessor ipFlipValue1maskFinal = ipFlipValue1mask;
+			final ImagePlus imp10pxRGBmaskfinal = imp10pxRGBmask;
+			
+			final ImageProcessor IP10pxRGBmaskfinal = IP10pxRGBmask; 
+			final ImagePlus impgradientMaskFinal = impgradientMask; 
+			
+			for (int ithread = 0; ithread < threads.length; ithread++) {
+				// Concurrently run in as many threads as CPUs
+				threads[ithread] = new Thread() {
 					
-					int pix1 = SLICEtifip.get(ivx);
-					int pix2 = ipgradientMask.get(ivx);
+					{ setPriority(Thread.NORM_PRIORITY); }
 					
-					SLICEtifip.set(ivx, pix1*pix2);
-					
-				}// multiply slice and gradient mask
-				
-				
-				long MaskToSample=sumPXmeasure(SLICEtifimp);
-				
-		//		if(test==1 && isli==6){
-		//						SLICEtifimp.show();
-		//						return SLICEtifimp;
-		//		}
-				
-				//		IJ.log("MaskToSample; "+MaskToSample);
-				//		if(MaskToSample==0){
-				//			IJ.log("SLICEtifimp is 0");
-				//			return SLICEtifimp; 
-				
-				//		}
-				SLICEtifimp.unlock();
-				SLICEtifimp.close();
-				
-				
-				
-				long MaskToSampleFlip=0;
-				//// flip ////////////////////////////////////
-				if(flip==1){
-					
-					
-					ImagePlus SLICEtifimpFlip = new ImagePlus ("SLICEflip.tif",ipresult);// original stack slice
-					ic = new ImageConverter(SLICEtifimpFlip);
-					ic.convertToGray16();
-					
-					SLICEtifip = SLICEtifimpFlip.getProcessor();
-					setsignal1(SLICEtifip,sumpx);
-					
-					for(int ivx2=0; ivx2<sumpx; ivx2++){
+					public void run() {
 						
-						int pix1 = SLICEtifip.get(ivx2);
-						int pix2 = ipgradientFlipMask.get(ivx2);
-						
-						SLICEtifip.set(ivx2, pix1*pix2);
-						
-					}// multiply slice and gradient mask
-					
-					//	if(test==1){
-					//		SLICEtifimpFlip.show();
-					//			return;
-					//	}
-					
-					MaskToSampleFlip=sumPXmeasure(SLICEtifimpFlip);
-					//		IJ.log("MaskToSampleFlip; "+MaskToSampleFlip);
-					
-					//		if(MaskToSampleFlip==0){
-					//			IJ.log("SLICEtifimpFlip is 0");
-					//			return SLICEtifimpFlip;
-					//		}
-					
-					SLICEtifimpFlip.unlock();
-					SLICEtifimpFlip.hide();
-					SLICEtifimpFlip.close();
-				}//	if(flip==1){
-				
-				
-				ipSLICE2 = Stack2stack.getProcessor(isli);// already gradient stack
-				String titleslice = Stack2stack.getSliceLabel(isli);
-				
-				impgradient = new ImagePlus (titleslice,ipSLICE2);
-				
-				if(rungradientonthefly==false){
-					
-					int undeindex=namearray[isli-1].indexOf("_");
-					String filename=namearray[isli-1].substring(undeindex+1, namearray[isli-1].length());
-					
-					//		IJ.log("gradientDIR; "+gradientDIR+";   length; "+gradientDIR.length()+"   lastcha; "+lastcha+"   filename; "+filename);
-					
-					
-					File f = new File(gradientDIR+filename);
-					if (!f.exists()){
-						IJ.log("The file cannot open; "+gradientDIR+filename);
-						return impgradient;
-						
-					}else{
-						
-						impgradient = IJ.openImage(gradientDIR+filename);
-						ipSLICE2 = impgradient.getProcessor();
-						
-					}
-				}//if(rungradientonthefly==false){
-				
-				ImagePlus impSLICE2 = impgradient.duplicate();
-				
-				ImageProcessor ipforfunc2 = impSLICE2.getProcessor();
-				
-				for(int ivx2=0; ivx2<sumpx; ivx2++){
-					int pix1 = ipforfunc2.get(ivx2);
-					int pix2 = ipValue1mask.get(ivx2);
-					
-					ipforfunc2.set(ivx2, pix1*pix2);
-					
-				}// multiply slice and gradient mask
-				
-				long SampleToMask=sumPXmeasure(impSLICE2);
-				
-				//		IJ.log("SampleToMask; "+SampleToMask);
-				
-		//		if(test==1 && isli==6){
-		//			impgradient.show();
-		//			return impgradient;
-		//		}
-				
-				if(IJ.escapePressed()){
-					IJ.log("esc canceled");
-					return impSLICE2;
-				}
-				
-				impSLICE2.unlock();
-				impSLICE2.hide();
-				impSLICE2.close();
-				long SampleToMaskflip;
-				long normalval=(SampleToMask+MaskToSample)/2;
-				long realval=normalval;
-				int fliphit=0;
-				
-				if(flip==1){
-					//// flip X//////////////////////////////////////
-					ImageProcessor ipforfunc21;
-					
-					ImagePlus impSLICE2F = impgradient.duplicate();//single slice from em bodyID hit
-					
-					//	IJ.run(impSLICE2F,"Flip Horizontally","");// Flip gradient opened EM mask
-					
-					//			if(test==1){
-					//				impgradient.show();
-					//				impSLICE2F.show();
-					//				return impgradient;
-					//			}
-					
-					ipforfunc21 = impSLICE2F.getProcessor();
-					
-					for(int ivx2=0; ivx2<sumpx; ivx2++){
-						
-						int pix1 = ipforfunc21.get(ivx2);
-						int pix2 = ipFlipValue1mask.get(ivx2);
-						
-						ipforfunc21.set(ivx2, pix1*pix2);
-						
-					}// multiply slice and gradient mask
-					
-					SampleToMaskflip=sumPXmeasure(impSLICE2F);
-					
-					//		IJ.log("SampleToMaskflip; "+SampleToMaskflip);
-					
-			//		if(test==1){
-			//			impFlipValue1mask.show();
-			//			impSLICE2F.show();
-			//			return impSLICE2F;
-			//		}
-					
-					//	if(SampleToMaskflip==0){
-					//		impSLICE2F.show();
-					//			IJ.log("impSLICE2F is 0");
-					//			return impSLICE2F;
-					//		}
-					impSLICE2F.unlock();
-					impSLICE2F.close();
-					
-					impFlipValue1mask.unlock();
-					impFlipValue1mask.close();
-					
-					long flipval=(SampleToMaskflip+MaskToSampleFlip)/2;
-					if(flipval<=normalval){
-						realval=flipval;
-						fliparray[isli-1]=1;
-					}
-				}//	if(flip==1){
-				
-				areaarray[isli-1]=realval;
-				
-				if(maxAreagap<areaarray[isli-1])
-				maxAreagap=areaarray[isli-1];
-				
-				impgradient.unlock();
-				//		impgradient.hide();
-				impgradient.close();
-			}//for(int isli=1; isli<=slices; isli++){
+						for(int isli=ai.getAndIncrement(); isli<PositiveStackSlice+1; isli = ai.getAndIncrement()){
+							
+					//		IJ.log("ai; "+ai);
+							//	for(int isli=1; isli<PositiveStackSlice+1; isli++){
+							ImageProcessor ipresult = originalresultstack.getProcessor(isli);
+							ImagePlus SLICEtifimp = new ImagePlus ("SLICE.tif",ipresult);
+							
+							//multipy image creation/////////////
+							ImageConverter ic2 = new ImageConverter(SLICEtifimp);
+							ic2.convertToGray16();
+							
+							SLICEtifimp = setsignal1(SLICEtifimp,sumpx);
+							
+							ImageProcessor SLICEtifip = SLICEtifimp.getProcessor();
+							//	if(test==1 && isli==6){
+							//		SLICEtifimp.show();
+							//		return SLICEtifimp;
+							//	}
+							ImageProcessor ipgradientMask = impgradientMaskFinal.getProcessor();
+							
+							for(int ivx=0; ivx<sumpx; ivx++){
+								
+								int pix1 = SLICEtifip.get(ivx);
+								int pix2 = ipgradientMask.get(ivx);
+								
+								SLICEtifip.set(ivx, pix1*pix2);
+								
+							}// multiply slice and gradient mask
+							
+							//		if(test==1 && isli==2){
+							//			imp10pxRGBmask.show();
+							//			return imp10pxRGBmask;
+							//		}
+							
+						//	ImageProcessor IPOriStackResult = originalresultstack.getProcessor(isli);
+							ImagePlus impOriStackResult = new ImagePlus ("impOriStackResult.tif",originalresultstack.getProcessor(isli));// original stack slice
+							
+					//		SLICEtifip = deleteMatchZandCreateZnegativeScoreIMG (SLICEtifip,IPOriStackResult,IP10pxRGBmaskfinal,sumpx);
+							SLICEtifimp = deleteMatchZandCreateZnegativeScoreIMG (SLICEtifimp,impOriStackResult,imp10pxRGBmaskfinal,sumpx);
+							
+							
+							
+							//		if(test==1 && isli==4){
+							//			SLICEtifimp.show();
+							//			return SLICEtifimp;
+							//		}
+							
+							long MaskToSample=sumPXmeasure(SLICEtifimp);
+							
+							SLICEtifimp.unlock();
+							SLICEtifimp.close();
+							
+							
+							
+							long MaskToSampleFlip=0;
+							//// flip ////////////////////////////////////
+							if(mirror_maskEF){
+								
+								
+								ImagePlus SLICEtifimpFlip = new ImagePlus ("SLICEflip.tif",ipresult);// original stack slice
+								ic2 = new ImageConverter(SLICEtifimpFlip);
+								ic2.convertToGray16();
+								
+								setsignal1(SLICEtifimpFlip,sumpx);
+								SLICEtifip = SLICEtifimpFlip.getProcessor();
+								
+								for(int ivx2=0; ivx2<sumpx; ivx2++){
+									
+									int pix1 = SLICEtifip.get(ivx2);
+									int pix2 = ipgradientFlipMaskFinal.get(ivx2);
+									
+									SLICEtifip.set(ivx2, pix1*pix2);
+									
+								}// multiply slice and gradient mask
+								
+								//	if(test==1){
+								//		SLICEtifimpFlip.show();
+								//			return;
+								//	}
+								
+								//SLICEtifip = deleteMatchZandCreateZnegativeScoreIMG (SLICEtifip,IPOriStackResult,IPflip10pxRGBmaskFinal,sumpx);
+								SLICEtifimpFlip = deleteMatchZandCreateZnegativeScoreIMG (SLICEtifimpFlip,impOriStackResult,impRGBMaskFlipfinal,sumpx);
+								
+								MaskToSampleFlip=sumPXmeasure(SLICEtifimpFlip);
+								//		IJ.log("MaskToSampleFlip; "+MaskToSampleFlip);
+								
+								//		if(MaskToSampleFlip==0){
+								//			IJ.log("SLICEtifimpFlip is 0");
+								//			return SLICEtifimpFlip;
+								//		}
+								
+								SLICEtifimpFlip.unlock();
+								SLICEtifimpFlip.hide();
+								SLICEtifimpFlip.close();
+							}//	if(flip==1){
+							
+							
+							/// just for initialization of impgradient /////////////////////////
+							ImageProcessor ipSLICE2 = Stack2stackFinal.getProcessor(isli);// already gradient stack
+							String titleslice = Stack2stackFinal.getSliceLabel(isli);
+							
+							ImagePlus impgradient = new ImagePlus (titleslice,ipSLICE2);
+							/////////////end
+							
+							if(rungradientonthefly==false){
+								
+								int undeindex=namearray[isli-1].indexOf("_");
+								String filename=namearray[isli-1].substring(undeindex+1, namearray[isli-1].length());
+								
+								if(filename.endsWith(".png"))
+								filename=filename.replace(".png",".tif");
+								//		IJ.log("gradientDIR; "+gradientDIR+";   length; "+gradientDIR.length()+"   lastcha; "+lastcha+"   filename; "+filename);
+								
+								
+								File f = new File(gradientDIR+filename);
+								if (!f.exists()){
+									IJ.log("The file cannot open; "+gradientDIR+filename);
+									return;
+									
+								}else{
+									
+									impgradient = IJ.openImage(gradientDIR+filename);
+									
+								}
+							}//if(rungradientonthefly==false){
+							
+							ImagePlus impSLICE2 = impgradient.duplicate();
+							
+							ImageProcessor ipforfunc2 = impSLICE2.getProcessor();
+							
+							for(int ivx2=0; ivx2<sumpx; ivx2++){
+								int pix1 = ipforfunc2.get(ivx2);
+								int pix2 = ipValue1mask.get(ivx2);
+								
+								ipforfunc2.set(ivx2, pix1*pix2);
+								
+							}// multiply slice and gradient mask
+							
+							//ipforfunc2 = deleteMatchZandCreateZnegativeScoreIMG (ipforfunc2,IPOriStackResult,IP10pxRGBmaskfinal,sumpx);
+							impSLICE2 = deleteMatchZandCreateZnegativeScoreIMG (impSLICE2,impOriStackResult,imp10pxRGBmaskfinal,sumpx);
+							
+							long SampleToMask=sumPXmeasure(impSLICE2);
+							
+							//		IJ.log("SampleToMask; "+SampleToMask);
+							
+							//		if(test==1 && isli==6){
+							//			impgradient.show();
+							//			return impgradient;
+							//		}
+							
+							if(IJ.escapePressed()){
+								IJ.log("esc canceled");
+								return;
+							}
+							
+							impSLICE2.unlock();
+							impSLICE2.hide();
+							impSLICE2.close();
+							long SampleToMaskflip;
+							long normalval=(SampleToMask+MaskToSample)/2;
+							long realval=normalval;
+							int fliphit=0;
+							
+							if(mirror_maskEF){
+								//// flip X//////////////////////////////////////
+								ImagePlus impSLICE2F = impgradient.duplicate();//single slice from em bodyID hit
+								
+								//	IJ.run(impSLICE2F,"Flip Horizontally","");// Flip gradient opened EM mask
+								
+								//			if(test==1){
+								//				impgradient.show();
+								//				impSLICE2F.show();
+								//				return impgradient;
+								//			}
+								
+								ImageProcessor ipforfunc21 = impSLICE2F.getProcessor();
+								
+								for(int ivx2=0; ivx2<sumpx; ivx2++){
+									
+									int pix1 = ipforfunc21.get(ivx2);
+									int pix2 = ipFlipValue1maskFinal.get(ivx2);
+									
+									ipforfunc21.set(ivx2, pix1*pix2);
+								}// multiply slice and gradient mask
+								
+								SampleToMaskflip=sumPXmeasure(impSLICE2F);
+								
+								//		IJ.log("SampleToMaskflip; "+SampleToMaskflip);
+								//		if(test==1){
+								//			impFlipValue1mask.show();
+								//			impSLICE2F.show();
+								//			return impSLICE2F;
+								//		}
+								
+								impSLICE2F.unlock();
+								impSLICE2F.close();
+								
+								impFlipValue1mask.unlock();
+								impFlipValue1mask.close();
+								
+								long flipval=(SampleToMaskflip+MaskToSampleFlip)/2;
+								if(flipval<=normalval){
+									realval=flipval;
+									fliparray[isli-1]=1;
+								}
+							}//	if(flip==1){
+							
+							areaarray[isli-1]=realval;
+							
+							impgradient.unlock();
+							//		impgradient.hide();
+							impgradient.close();
+							
+							int winindexF = OSTYPE.indexOf("windows");
+							
+							if(winindexF==-1)
+							System.gc();
+							
+						}//2385 for(int isli=1; isli<=slices; isli++){
+				}};
+			}//	for (int ithread = 0; ithread < threads.length; ithread++) {
+			startAndJoin(threads);
+			
+			RGBMaskFlipIMP.unlock();
+			RGBMaskFlipIMP.close();
+			
+			for(int iscorescan=0; iscorescan<PositiveStackSlice; iscorescan++){
+				if(maxAreagap<areaarray[iscorescan])
+				maxAreagap=areaarray[iscorescan];
+			}
+			
+			long endTRGB =System.currentTimeMillis();
+			long gapT2=endTRGB-startTRGB;
+			
+			IJ.log(gapT2/1000+" sec for 2D distance score & RGB 3D score generation");
 			
 			impgradientMask.unlock();
 			//		impgradientMask.hide();
 			impgradientMask.close();
 			
-		//	IJ.log("Slice length; "+PositiveStackSlice);
+			impgradientMaskFinal.unlock();
+			impgradientMaskFinal.close();
+			
+			imp10pxRGBmask.unlock();
+			imp10pxRGBmask.close();
+			
+			//	IJ.log("Slice length; "+PositiveStackSlice);
 			double [] normScorePercent=new double[PositiveStackSlice];
 			/// normalize score ////////////////////
 			for(int inorm=0; inorm<PositiveStackSlice; inorm++){
@@ -2705,8 +2859,8 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 			long endT=System.currentTimeMillis();
 			long gapT=endT-startT;
 			
-			IJ.log(gapT/1000+" sec");
-			
+			IJ.log(gapT/1000+" sec for the total sorting");
+			System.gc();
 		}//  if(PositiveStackSlice>1){
 		return newimp;
 	}//public class CDM_area_measure 
@@ -2765,16 +2919,21 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 		return sumvalue;
 	}
 	
-	ImageProcessor setsignal1 (ImageProcessor ipfunc, int sumpxfunc){
+	ImagePlus setsignal1 (ImagePlus impfunc, int sumpxfunc){
 		for(int iff=0; iff<sumpxfunc; iff++){
 			
+			ImageProcessor ipfunc = impfunc.getProcessor();
 			int pix = ipfunc.get (iff);	//input
 			
 			if(pix>2)
 			ipfunc.set (iff, 1);//out put
 			
 		}//	for(int iff=1; iff<sumpx; iff++){
-		return ipfunc;
+		
+		impfunc.unlock();
+		impfunc.close();
+	//	System.gc();
+		return impfunc;
 	}
 	
 	ImageProcessor gradientslice (ImageProcessor ipgra){
@@ -2834,6 +2993,7 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 			}//	for(int ix=0; ix<width; ix++){// x pixel shift
 			nextmin=nextmin+1;
 		}//	while(Stop==0){
+		impfunc.unlock();
 		impfunc.close();
 		return ipgra;
 	}
@@ -2851,14 +3011,299 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 			int neuronpix=ipneuron.get(idel);
 			int maskpix=ipEMmask.get(idel);	
 			
-			if(neuronpix>0){
-				if(maskpix==0){
-					ipneuron.set(idel, 0);
+			
+			if(impneuron.getType()!=ImagePlus.COLOR_RGB){
+				if(neuronpix>0){
+					if(maskpix==0){
+						ipneuron.set(idel, 0);
+					}
+				}
+			}else{//if(impneuron.getType()!=ImagePlus.COLOR_RGB){
+				if(neuronpix!=-16777216){
+					if(maskpix==0){
+						ipneuron.set(idel, -16777216);
+					}
 				}
 			}
-			
 		}//for(idel=0; idel<sumpxfl idel++){
+		
+		impneuron.unlock();
+		impneuron.close();
+		
 		return ipneuron;
+	}//ImageProcessor DeleteOutSideMask
+	
+	ImagePlus deleteMatchZandCreateZnegativeScoreIMG (ImagePlus SLICEtifimpF,ImagePlus impOriStackResultF,ImagePlus imp10pxRGBmaskF, int sumpxF) {
+		// SLICEtifipF is score gradient 16bit image
+		//IPOriStackResultF is original RGBimage from 3D hit stack
+		//IP10pxRGBmaskF is dilated RGB mask
+		
+		ImageProcessor SLICEtifipF=SLICEtifimpF.getProcessor();
+		ImageProcessor IPOriStackResultF = impOriStackResultF.getProcessor();
+		ImageProcessor IP10pxRGBmaskF = imp10pxRGBmaskF.getProcessor();
+		
+		int colorFlux=40; // color fluctuation of matching, 5 microns
+		
+		for(int icompare=0; icompare<sumpxF; icompare++){
+			
+			int dilatedmaskpix = IP10pxRGBmaskF.get(icompare);
+			
+			if(dilatedmaskpix!=-16777216){// if 10px expand RGBmask is not 0
+				
+				int orimaskpix= IPOriStackResultF.get(icompare);
+				
+				if(orimaskpix!=-16777216){// / if original RGBmask is not 0
+					
+					//	IJ.log("orimaskpix; "+orimaskpix);
+					
+					int redDileate = (dilatedmaskpix>>>16) & 0xff;
+					int greenDileate = (dilatedmaskpix>>>8) & 0xff;
+					int blueDileate = dilatedmaskpix & 0xff;
+					
+					
+					int red1 = (orimaskpix>>>16) & 0xff;
+					int green1 = (orimaskpix>>>8) & 0xff;
+					int blue1 = orimaskpix & 0xff;
+					
+					
+					int pxGapSlice = calc_slicegap_px(red1, green1, blue1, redDileate, greenDileate, blueDileate,icompare); 
+					
+					if(colorFlux<=pxGapSlice-colorFlux){// set negative score value to gradient SLICEtifipF
+						//		IJ.log("pxGapSlice; "+pxGapSlice);
+						SLICEtifipF.set(icompare,pxGapSlice-colorFlux);
+					}
+				}
+			}//if(dilatedmaskpix!=-16777216){// if mask is not 0 RGB
+			
+		}//for(int icompare=0; icompare<sumpxF; icompare++){
+		
+		imp10pxRGBmaskF.unlock();
+		imp10pxRGBmaskF.close();
+		
+		impOriStackResultF.unlock();
+		impOriStackResultF.close();
+		
+		SLICEtifimpF.unlock();
+		SLICEtifimpF.close();
+		
+	//	System.gc();
+		
+		return SLICEtifimpF;
+	}//ImageProcessor deleteMatchZandCreateZnegativeScoreIMG
+	
+	public static int calc_slicegap_px(int red1, int green1, int blue1, int red2, int green2, int blue2, int icompareF) {
+		
+		int max1stvalMASK=0,max2ndvalMASK=0,max1stvalDATA=0,max2ndvalDATA=0,maskslinumber=0,dataslinumber=0;
+		String mask1stMaxColor="Black",mask2ndMaxColor="Black",data1stMaxColor="Black",data2ndMaxColor="Black";
+		
+		if(red1>=green1 && red1>=blue1){
+			max1stvalMASK=red1;
+			mask1stMaxColor="red";
+			if(green1>=blue1){
+				max2ndvalMASK=green1;
+				mask2ndMaxColor="green";
+			}else{
+				max2ndvalMASK=blue1;
+				mask2ndMaxColor="blue";
+			}
+		}else if(green1>=red1 && green1>=blue1){
+			max1stvalMASK=green1;
+			mask1stMaxColor="green";
+			if(red1>=blue1){
+				mask2ndMaxColor="red";
+				max2ndvalMASK=red1;
+			}else{
+				max2ndvalMASK=blue1;
+				mask2ndMaxColor="blue";
+			}
+		}else if(blue1>=red1 &&  blue1>=green1){
+			max1stvalMASK=blue1;
+			mask1stMaxColor="blue";
+			if(red1>=green1){
+				max2ndvalMASK=red1;
+				mask2ndMaxColor="red";
+			}else{
+				max2ndvalMASK=green1;
+				mask2ndMaxColor="green";
+			}
+		}
+		
+		if(red2>=green2 && red2>=blue2){
+			max1stvalDATA=red2;
+			data1stMaxColor="red";
+			if(green2>=blue2){
+				max2ndvalDATA=green2;
+				data2ndMaxColor="green";
+			}else{
+				max2ndvalDATA=blue2;
+				data2ndMaxColor="blue";
+			}
+		}else if(green2>=red2 && green2>=blue2){
+			max1stvalDATA=green2;
+			data1stMaxColor="green";
+			if(red2>=blue2){
+				max2ndvalDATA=red2;
+				data2ndMaxColor="red";
+			}else{
+				max2ndvalDATA=blue2;
+				data2ndMaxColor="blue";
+			}
+		}else if(blue2>=red2 &&  blue2>=green2){
+			max1stvalDATA=blue2;
+			data1stMaxColor="blue";
+			if(red2>=green2){
+				max2ndvalDATA=red2;
+				data2ndMaxColor="red";
+			}else{
+				max2ndvalDATA=green2;
+				data2ndMaxColor="green";
+			}
+		}
+		
+		double maskratio= (double)max2ndvalMASK / (double) max1stvalMASK;
+		double dataratio= (double)max2ndvalDATA / (double) max1stvalDATA;
+		//	IJ.log("Line 2985");
+		String LUT = "127_0_255,125_3_255,124_6_255,122_9_255,121_12_255,120_15_255,119_18_255,118_21_255,116_24_255,115_27_255,114_30_255,113_33_255,112_36_255,110_39_255,109_42_255,108_45_255,106_48_255,105_51_255,104_54_255,103_57_255,101_60_255,100_63_255,99_66_255,98_69_255,96_72_255,95_75_255,94_78_255,93_81_255,92_84_255,90_87_255,89_90_255,87_93_255,86_96_255,84_99_255,83_102_255,81_105_255,80_108_255,78_111_255,77_114_255,75_117_255,74_120_255,72_123_255,71_126_255,69_129_255,68_132_255,66_135_255,65_138_255,63_141_255,62_144_255,60_147_255,59_150_255,57_153_255,56_156_255,54_159_255,53_162_255,51_165_255,50_168_255,48_171_255,47_174_255,45_177_255,44_180_255,42_183_255,41_186_255,39_189_255,38_192_255,36_195_255,35_198_255,33_201_255,32_204_255,30_207_255,29_210_255,27_213_255,26_216_255,24_219_255,23_222_255,21_225_255,20_228_255,18_231_255,16_234_255,14_237_255,12_240_255,9_243_255,6_246_255,3_249_255,1_252_255,0_254_255,3_255_252,6_255_249,9_255_246,12_255_243,15_255_240,18_255_237,21_255_234,24_255_231,27_255_228,30_255_225,33_255_222,36_255_219,39_255_216,42_255_213,45_255_210,48_255_207,51_255_204,54_255_201,57_255_198,60_255_195,63_255_192,66_255_189,69_255_186,72_255_183,75_255_180,78_255_177,81_255_174,84_255_171,87_255_168,90_255_165,93_255_162,96_255_159,99_255_156,102_255_153,105_255_150,108_255_147,111_255_144,114_255_141,117_255_138,120_255_135,123_255_132,126_255_129,129_255_126,132_255_123,135_255_120,138_255_117,141_255_114,144_255_111,147_255_108,150_255_105,153_255_102,156_255_99,159_255_96,162_255_93,165_255_90,168_255_87,171_255_84,174_255_81,177_255_78,180_255_75,183_255_72,186_255_69,189_255_66,192_255_63,195_255_60,198_255_57,201_255_54,204_255_51,207_255_48,210_255_45,213_255_42,216_255_39,219_255_36,222_255_33,225_255_30,228_255_27,231_255_24,234_255_21,237_255_18,240_255_15,243_255_12,246_255_9,249_255_6,252_255_3,254_255_0,255_252_3,255_249_6,255_246_9,255_243_12,255_240_15,255_237_18,255_234_21,255_231_24,255_228_27,255_225_30,255_222_33,255_219_36,255_216_39,255_213_42,255_210_45,255_207_48,255_204_51,255_201_54,255_198_57,255_195_60,255_192_63,255_189_66,255_186_69,255_183_72,255_180_75,255_177_78,255_174_81,255_171_84,255_168_87,255_165_90,255_162_93,255_159_96,255_156_99,255_153_102,255_150_105,255_147_108,255_144_111,255_141_114,255_138_117,255_135_120,255_132_123,255_129_126,255_126_129,255_123_132,255_120_135,255_117_138,255_114_141,255_111_144,255_108_147,255_105_150,255_102_153,255_99_156,255_96_159,255_93_162,255_90_165,255_87_168,255_84_171,255_81_173,255_78_174,255_75_175,255_72_176,255_69_177,255_66_178,255_63_179,255_60_180,255_57_181,255_54_182,255_51_183,255_48_184,255_45_185,255_42_186,255_39_187,255_36_188,255_33_189,255_30_190,255_27_191,255_24_192,255_21_193,255_18_194,255_15_195,255_12_196,255_9_197,255_6_198,255_3_199,255_0_200";
+		
+		String [] LUTarray = LUT.split(",");
+		//	IJ.log("LUTarray.length; "+LUTarray.length);
+		if(mask1stMaxColor.equals("red")){//cheking slice num 172-256
+			
+			if(mask2ndMaxColor.equals("green"))//172-213
+			maskslinumber = calc_slicenumber(171, 212, LUTarray,maskratio);
+			if(mask2ndMaxColor.equals("blue"))//214-256
+			maskslinumber = calc_slicenumber(213, 255, LUTarray,maskratio);
+			
+		}else if(mask1stMaxColor.equals("green")){//cheking slice num 87-171
+			if(mask2ndMaxColor.equals("red"))//129-171
+			maskslinumber = calc_slicenumber(128, 170, LUTarray,maskratio);
+			if(mask2ndMaxColor.equals("blue"))//87-128
+			maskslinumber = calc_slicenumber(86, 127, LUTarray,maskratio);
+			
+		}else if(mask1stMaxColor.equals("blue")){//cheking slice num 1-86 = 0-85
+			if(mask2ndMaxColor.equals("red"))//1-30
+			maskslinumber = calc_slicenumber(0, 29, LUTarray,maskratio);
+			if(mask2ndMaxColor.equals("green"))//31-86
+			maskslinumber = calc_slicenumber(30, 85, LUTarray,maskratio);
+		}
+		
+		
+		if(data1stMaxColor.equals("red")){//cheking slice num 172-256
+			if(data2ndMaxColor.equals("green")){//172-213
+				dataslinumber = calc_slicenumber(171, 212, LUTarray,dataratio);
+				//			IJ.log("dataratio; "+dataratio+"  max1stvalDATA; "+max1stvalDATA+"  max2ndvalDATA; "+max2ndvalDATA);
+			}else if(data2ndMaxColor.equals("blue"))//214-256
+			dataslinumber = calc_slicenumber(213, 255, LUTarray,dataratio);
+			
+		}else if(data1stMaxColor.equals("green")){//cheking slice num 87-171
+			if(data2ndMaxColor.equals("red"))//129-171
+			dataslinumber = calc_slicenumber(128, 170, LUTarray,dataratio);
+			if(data2ndMaxColor.equals("blue"))//87-128
+			dataslinumber = calc_slicenumber(86, 127, LUTarray,dataratio);
+			
+		}else if(data1stMaxColor.equals("blue")){//cheking slice num 1-86 = 0-85
+			if(data2ndMaxColor.equals("red"))//1-30
+			dataslinumber = calc_slicenumber(0, 29, LUTarray,dataratio);
+			if(data2ndMaxColor.equals("green"))//31-86
+			dataslinumber = calc_slicenumber(30, 85, LUTarray,dataratio);
+		}
+		
+		//	IJ.log("dataslinumber; "+dataslinumber+"   maskslinumberl; "+maskslinumber);
+		
+		if(dataslinumber==0 || maskslinumber==0){
+			
+			int xx= icompareF%1210;
+			int yy=icompareF/1210;
+			
+			IJ.log("no slice matching;  maskslinumber; "+maskslinumber+"   dataslinumber; "+dataslinumber+"  xx; "+xx+"  yy; "+yy);
+			IJ.log("mask1stMaxColor; "+mask1stMaxColor+"   mask2ndMaxColor; "+mask2ndMaxColor+"   data1stMaxColor; "+data1stMaxColor+"   data2ndMaxColor; "+data2ndMaxColor);
+			IJ.log("dataratio; "+dataratio+"  max1stvalDATA; "+max1stvalDATA+"  max2ndvalDATA; "+max2ndvalDATA);
+			
+			return (int) dataslinumber;
+		}
+		
+		
+		int gapslicenum = Math.abs(maskslinumber-dataslinumber);
+		//	IJ.log("gapslicenum; "+gapslicenum);
+		return gapslicenum;
+	}//	public static double calc_slicegap_px(i
+	
+	public static int calc_slicenumber(int countSTnum, int countENDnum, String [] LUTarrayF, double maskratioF){
+		//	IJ.log("calc_slicenumber");
+		int maskslinumberF=0;
+		double mingapratio=1000;
+		for(int icolor=countSTnum; icolor<=countENDnum; icolor++){
+			
+			String [] coloraray= LUTarrayF[icolor].split("_");
+			double LUTratio = 0;
+			
+			//		IJ.log("coloraray.length"+coloraray.length+"  LUTarrayF[icolor]; "+LUTarrayF[icolor]+"   LUTarrayF.length"+LUTarrayF.length);
+			double colorR = Double.parseDouble(coloraray[0]);
+			double colorG = Double.parseDouble(coloraray[1]);
+			double colorB = Double.parseDouble(coloraray[2]);
+			
+			if(colorB>colorR && colorB>colorG){
+				if(colorR>colorG)
+				LUTratio = colorR/colorB;
+				else if(colorG>colorR)
+				LUTratio = colorG/colorB;
+				
+			}else if(colorG>colorR && colorG>colorB){
+				if(colorR>colorB)
+				LUTratio = colorR/colorG;
+				else if(colorB>colorR)
+				LUTratio = colorB/colorG;
+				
+			}else if(colorR>colorG && colorR>colorB){
+				if(colorG>colorB)
+				LUTratio = colorG/colorR;
+				else if(colorB>colorG)
+				LUTratio = colorB/colorR;
+			}//	if(coloraray[2]>coloraray[0] && coloraray[2]>coloraray[1]){//	if(coloraray[2]>coloraray[0] && coloraray[2]>coloraray[1]){
+			
+			if(LUTratio==maskratioF){
+				maskslinumberF = icolor+1;
+				//		IJ.log("maskslinumber; "+maskslinumberF);
+				break;
+			}
+			
+			double gapratio = Math.abs(maskratioF-LUTratio);
+			
+			if(gapratio<mingapratio){
+				mingapratio=gapratio;
+				maskslinumberF = icolor+1;
+			}
+		}
+		return maskslinumberF;
+	}
+	
+	
+	private Thread[] newThreadArray() {
+		int n_cpus = Runtime.getRuntime().availableProcessors();
+	//	IJ.log("3282 n_cpus; "+n_cpus+"  threadNumE; "+threadNumE);
+		
+		if (n_cpus > threadNumE) n_cpus = threadNumE;
+		if (n_cpus <= 0) n_cpus = 1;
+	//	IJ.log("3284 n_cpus; "+n_cpus);
+		return new Thread[n_cpus];
+	}
+	
+	public static void startAndJoin(Thread[] threads)
+	{
+		for (int ithread = 0; ithread < threads.length; ++ithread)
+		{
+			threads[ithread].setPriority(Thread.NORM_PRIORITY);
+			threads[ithread].start();
+		}
+		
+		try
+		{   
+			for (int ithread = 0; ithread < threads.length; ++ithread)
+			threads[ithread].join();
+		} catch (InterruptedException ie)
+		{
+			throw new RuntimeException(ie);
+		}
 	}
 	
 } //public class Two_windows_mask_search implements PlugInFilter{
