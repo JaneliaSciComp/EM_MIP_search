@@ -252,7 +252,7 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 		
 		gd.setInsets(20, 0, 0);
 		gd.addNumericField("Positive PX % Threshold: EM matching is 0.5-1.5%", pixThresE, 4);
-		gd.addSlider("Pix Color Fluctuation, ± Z slice", 0, 10, pixfluE);
+		gd.addSlider("Pix Color Fluctuation, +- Z slice", 0, 10, pixfluE);
 		
 		gd.setInsets(20, 0, 0);
 		gd.addStringField("Gradient file path: ", gradientDIR_,50);
@@ -2594,8 +2594,8 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 								int undeindex=namearray[isli-1].indexOf("_");
 								String filename=namearray[isli-1].substring(undeindex+1, namearray[isli-1].length());
 								
-								if(filename.endsWith(".png"))
-								filename=filename.replace(".png",".tif");
+								if(filename.endsWith(".tif"))
+								filename=filename.replace(".tif",".png");
 								//		IJ.log("gradientDIR; "+gradientDIR+";   length; "+gradientDIR.length()+"   lastcha; "+lastcha+"   filename; "+filename);
 								
 								
