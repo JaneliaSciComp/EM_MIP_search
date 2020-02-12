@@ -2530,10 +2530,8 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 							//			return;
 							//		}
 							
-						//	ImageProcessor IPOriStackResult = originalresultstack.getProcessor(isli);
 							ImagePlus impOriStackResult = new ImagePlus ("impOriStackResult.tif",originalresultstack.getProcessor(isli));// original stack slice
 							
-					//		SLICEtifip = deleteMatchZandCreateZnegativeScoreIMG (SLICEtifip,IPOriStackResult,IP10pxRGBmaskfinal,sumpx);
 							SLICEtifimp = deleteMatchZandCreateZnegativeScoreIMG (SLICEtifimp,impOriStackResult,imp10pxRGBmaskfinal,sumpx);
 							
 							
