@@ -2172,7 +2172,7 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 			// original area measurement////////////////////
 			String maskname = impmask.getTitle();
 			IJ.log("maskname; "+maskname);
-			int test=1;
+			final int test=1;
 			
 			ImagePlus impgradientMask = impmask.duplicate();
 			ImagePlus imp10pxRGBmask = impmask.duplicate();
@@ -2219,6 +2219,11 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 			String lastcha=gradientDIR.substring(gradientDIR.length()-1,gradientDIR.length());
 			final String OSTYPE = System.getProperty("os.name").toLowerCase();
 			//						IJ.log("OSTYPE; "+OSTYPE);
+			
+		//	if(test==1){
+		//		imp10pxRGBmask.show();
+		//		return imp10pxRGBmask;
+		//	}
 			
 			String gradientDIRopen=gradientDIR;
 			
@@ -2281,7 +2286,7 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 				IPflip10pxRGBmask = DeleteOutSideMask(IPflip10pxRGBmask,iphemiMIP); // flipped RGBmask; delete out side of EM mask
 				
 		//		if(test==1){
-		//			RGBMaskFlipIMP.show();// 
+			//		RGBMaskFlipIMP.show();// 
 		//			return RGBMaskFlipIMP; 
 		//		}
 				
@@ -2341,8 +2346,9 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 		
 			
 			Value1maskIMP = setsignal1(Value1maskIMP,sumpx);
+			final ImagePlus Value1maskIMPfinal = Value1maskIMP;
 			
-			ImageProcessor ipValue1mask =Value1maskIMP.getProcessor();
+			final ImageProcessor ipValue1mask =Value1maskIMP.getProcessor();
 			//	if(test==1){
 			//		Value1maskIMP.show();
 			//		return Value1maskIMP; 
@@ -2498,6 +2504,11 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 							
 							SLICEtifimp = setsignal1(SLICEtifimp,sumpx);
 							
+							//if(test==1 && isli==2){
+							//	SLICEtifimp.show();
+							//				return;
+							//			}
+							
 							ImageProcessor SLICEtifip = SLICEtifimp.getProcessor();
 							//	if(test==1 && isli==6){
 							//		SLICEtifimp.show();
@@ -2514,9 +2525,9 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 								
 							}// multiply slice and gradient mask
 							
-							//		if(test==1 && isli==2){
+							//		if(test==1 && isli==1){
 							//			imp10pxRGBmask.show();
-							//			return imp10pxRGBmask;
+							//			return;
 							//		}
 							
 						//	ImageProcessor IPOriStackResult = originalresultstack.getProcessor(isli);
@@ -2527,9 +2538,9 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 							
 							
 							
-							//		if(test==1 && isli==4){
+							//		if(test==1 && isli==18){
 							//			SLICEtifimp.show();
-							//			return SLICEtifimp;
+							//			return;
 							//		}
 							
 							long MaskToSample=sumPXmeasure(SLICEtifimp);
@@ -2550,6 +2561,7 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 								
 								setsignal1(SLICEtifimpFlip,sumpx);
 								SLICEtifip = SLICEtifimpFlip.getProcessor();
+								
 								
 								for(int ivx2=0; ivx2<sumpx; ivx2++){
 									
@@ -2607,24 +2619,46 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 								}else{
 									
 									impgradient = IJ.openImage(gradientDIR+filename);
-									
+							//		IJ.log("gradientDIR+filename; "+gradientDIR+filename);
 								}
 							}//if(rungradientonthefly==false){
 							
 							ImagePlus impSLICE2 = impgradient.duplicate();
 							
+					//		if(test==1  && isli==2){
+					//			impSLICE2.show();// 
+					//			return; 
+					//		}
+							
 							ImageProcessor ipforfunc2 = impSLICE2.getProcessor();
 							
-							for(int ivx2=0; ivx2<sumpx; ivx2++){
+					//		if(test==1  && isli==1){
+					//			Value1maskIMPfinal.show();
+					//			impSLICE2.show();// 
+					//			return; 
+					//		}
+							
+							for(int ivx2=0; ivx2<sumpx; ivx2++){//multiply images
 								int pix1 = ipforfunc2.get(ivx2);
 								int pix2 = ipValue1mask.get(ivx2);
 								
 								ipforfunc2.set(ivx2, pix1*pix2);
-								
 							}// multiply slice and gradient mask
+							
+					//		if(test==1  && isli==1){
+						
+					//			impSLICE2.show();// 
+					//			return; 
+					//		}
 							
 							//ipforfunc2 = deleteMatchZandCreateZnegativeScoreIMG (ipforfunc2,IPOriStackResult,IP10pxRGBmaskfinal,sumpx);
 							impSLICE2 = deleteMatchZandCreateZnegativeScoreIMG (impSLICE2,impOriStackResult,imp10pxRGBmaskfinal,sumpx);
+							
+							
+					//		if(test==1  && isli==2){
+					//			impSLICE2.show();// 
+					//			return; 
+					//		}
 							
 							long SampleToMask=sumPXmeasure(impSLICE2);
 							
