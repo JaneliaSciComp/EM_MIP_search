@@ -38,7 +38,7 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 {
 	ImagePlus imp, imp2;
 	ImageProcessor ip1, nip1, ip2, ip3, ip4, ip5, ip6, ip33;
-	int pix1=0, CheckPost,UniqueLineName=0,IsPosi,threadNumE=0;
+	int pix1=0, CheckPost,UniqueLineName=0,IsPosi,threadNumE=0,FLpositive=0;
 	int pix3=0,Check=0,arrayPosition=0,dupdel=1,FinalAdded=1,enddup=0;
 	ImagePlus newimp, newimpOri;
 	String linename,LineNo, LineNo2,preLineNo="A",FullName,LineName,arrayName,PostName;
@@ -232,7 +232,7 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 		gd.addSlider("1.Threshold for mask", 0, 255, ThresmE);
 		gd.setInsets(0, 340, 0);
 		gd.addCheckbox("1.Add mirror search", mirror_maskE);
-
+		
 		gd.setInsets(0, 340, 0);
 		gd.addCheckbox("ShowFlip hits on a same side", showFlip);
 		
@@ -338,11 +338,11 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 		Prefs.set("GradientOnTheFly_.boolean", GradientOnTheFly_);
 		
 		if(GCONE==true){
-	//		XX:+UseG1GC;
+			//		XX:+UseG1GC;
 			System.gc();
 			System.gc();
-	//		-XX:+UnlockExperimentalVMOptions;
-	//		-XX:InitiatingHeapOccupancyPercent=5;
+			//		-XX:+UnlockExperimentalVMOptions;
+			//		-XX:InitiatingHeapOccupancyPercent=5;
 		}
 		
 		if(logonE==true){
@@ -644,7 +644,7 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 											IJ.showStatus("Number of Hits (estimated): "+out.size()*fthreadnum);
 										}
 										f.close();
-									//	System.gc();
+										//	System.gc();
 									} catch (IOException e) {
 										continue;
 									}
@@ -660,6 +660,13 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 							srlabels.add(r.m_name);
 							srdict.put(r.m_name, r);
 							
+							int FLindex = r.m_name.lastIndexOf("_FL");
+							
+							//		IJ.log("r.m_name; "+r.m_name);
+							
+							if(FLindex!=-1)
+							FLpositive=FLpositive+1;
+							
 							posislice=posislice+1;
 						}
 					}
@@ -668,7 +675,7 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 				}
 			}
 			
-		} else {
+		} else {// if not virtual stack
 			final List<Callable<ArrayList<SearchResult>>> tasks = new ArrayList<Callable<ArrayList<SearchResult>>>();
 			for (int ithread = 0; ithread < threadNumE; ithread++) {
 				final int ftid = ithread;
@@ -733,6 +740,13 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 						srlabels.add(r.m_name);
 						srdict.put(r.m_name, r);
 						
+						int FLindex = r.m_name.lastIndexOf("_FL");
+						
+						//	IJ.log("r.m_name; "+r.m_name);
+						
+						if(FLindex!=-1)
+						FLpositive=FLpositive+1;
+						
 						posislice=posislice+1;
 					}
 				}
@@ -742,7 +756,7 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 		}
 		
 		IJ.showStatus("Number of Hits: "+String.valueOf(posislice));
-		IJ.log(" positive slice No.;"+String.valueOf(posislice));
+		IJ.log(" positive slice No.;"+String.valueOf(posislice)+" FL positive; "+FLpositive);
 		
 		int PositiveSlices=posislice;
 		
@@ -1482,7 +1496,7 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 			RoiManager rois = new RoiManager(true);
 			rois.runCommand(imask,"Select All");
 			
-			ImagePlus newimp2 = CDM_area_measure (newimpOri, imask,gradientDIR_,GradientOnTheFly_,ThresmE,maxnumber,mirror_maskE,showFlip,threadNumE);
+			ImagePlus newimp2 = CDM_area_measure (newimpOri, imask,gradientDIR_,GradientOnTheFly_,ThresmE,maxnumber,mirror_maskE,showFlip,threadNumE,FLpositive,st3,slicenumber);
 			
 			if(shownormal==false){
 				newimpOri.unlock();
@@ -2128,7 +2142,7 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 		
 	}//public class ColorMIPMaskCompare {
 	
-	ImagePlus CDM_area_measure (ImagePlus impstack, ImagePlus impmask, final String gradientDIR, final boolean rungradientonthefly, final int ThresmEf, final int maxnumberF,final boolean mirror_maskEF, boolean showFlipF, final int threadNumEF){
+	ImagePlus CDM_area_measure (ImagePlus impstack, ImagePlus impmask, final String gradientDIR, final boolean rungradientonthefly, final int ThresmEf, final int maxnumberF,final boolean mirror_maskEF, boolean showFlipF, final int threadNumEF, int FLpositiveF, ImageStack st3F, int slicenumberF){
 		
 		int Threval=0; int stackslicenum=0;
 		
@@ -2220,10 +2234,10 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 			final String OSTYPE = System.getProperty("os.name").toLowerCase();
 			//						IJ.log("OSTYPE; "+OSTYPE);
 			
-		//	if(test==1){
-		//		imp10pxRGBmask.show();
-		//		return imp10pxRGBmask;
-		//	}
+			//	if(test==1){
+			//		imp10pxRGBmask.show();
+			//		return imp10pxRGBmask;
+			//	}
 			
 			String gradientDIRopen=gradientDIR;
 			
@@ -2285,10 +2299,10 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 				IP10pxRGBmask = DeleteOutSideMask(IP10pxRGBmask,iphemiMIP); // RGBmask; delete out side of EM mask
 				IPflip10pxRGBmask = DeleteOutSideMask(IPflip10pxRGBmask,iphemiMIP); // flipped RGBmask; delete out side of EM mask
 				
-		//		if(test==1){
-			//		RGBMaskFlipIMP.show();// 
-		//			return RGBMaskFlipIMP; 
-		//		}
+				//		if(test==1){
+				//		RGBMaskFlipIMP.show();// 
+				//			return RGBMaskFlipIMP; 
+				//		}
 				
 				ic = new ImageConverter(impgradientMask);
 				ic.convertToGray16();
@@ -2343,7 +2357,7 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 			ic = new ImageConverter(Value1maskIMP);
 			ic.convertToGray16();
 			
-		
+			
 			
 			Value1maskIMP = setsignal1(Value1maskIMP,sumpx);
 			final ImagePlus Value1maskIMPfinal = Value1maskIMP;
@@ -2372,8 +2386,8 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 			
 			int PositiveStackSlicePre=stackslicenum;
 			
-			if(PositiveStackSlicePre>maxnumberF+50)
-			PositiveStackSlicePre=maxnumberF+50;
+			if(PositiveStackSlicePre>maxnumberF+FLpositiveF+50)
+			PositiveStackSlicePre=maxnumberF+FLpositiveF+50;
 			
 			final int PositiveStackSlice=PositiveStackSlicePre;
 			
@@ -2387,7 +2401,7 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 			double maxScore=0;
 			long maxAreagap=0;
 			ImageStack Stack2stack;
-		
+			
 			/// name array creation ///////////////////
 			for(int iname=1; iname<=PositiveStackSlice; iname++){
 				
@@ -2399,7 +2413,7 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 					originalresultstack.setSliceLabel(namearray[iname-1],iname);
 				}
 				
-			//		IJ.log(String.valueOf(iname));
+				//		IJ.log(String.valueOf(iname));
 				
 				int undeIndex=namearray[iname-1].indexOf("_");
 				
@@ -2475,7 +2489,7 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 			final AtomicInteger ai = new AtomicInteger(1);
 			final Thread[] threads = newThreadArray();
 			
-		//	IJ.log("threads.length; "+threads.length);
+			//	IJ.log("threads.length; "+threads.length);
 			
 			final ImageProcessor ipFlipValue1maskFinal = ipFlipValue1mask;
 			final ImagePlus imp10pxRGBmaskfinal = imp10pxRGBmask;
@@ -2493,7 +2507,7 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 						
 						for(int isli=ai.getAndIncrement(); isli<PositiveStackSlice+1; isli = ai.getAndIncrement()){
 							
-					//		IJ.log("ai; "+ai);
+							//		IJ.log("ai; "+ai);
 							//	for(int isli=1; isli<PositiveStackSlice+1; isli++){
 							ImageProcessor ipresult = originalresultstack.getProcessor(isli);
 							ImagePlus SLICEtifimp = new ImagePlus ("SLICE.tif",ipresult);
@@ -2617,24 +2631,24 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 								}else{
 									
 									impgradient = IJ.openImage(gradientDIR+filename);
-							//		IJ.log("gradientDIR+filename; "+gradientDIR+filename);
+									//		IJ.log("gradientDIR+filename; "+gradientDIR+filename);
 								}
 							}//if(rungradientonthefly==false){
 							
 							ImagePlus impSLICE2 = impgradient.duplicate();
 							
-					//		if(test==1  && isli==2){
-					//			impSLICE2.show();// 
-					//			return; 
-					//		}
+							//		if(test==1  && isli==2){
+							//			impSLICE2.show();// 
+							//			return; 
+							//		}
 							
 							ImageProcessor ipforfunc2 = impSLICE2.getProcessor();
 							
-					//		if(test==1  && isli==1){
-					//			Value1maskIMPfinal.show();
-					//			impSLICE2.show();// 
-					//			return; 
-					//		}
+							//		if(test==1  && isli==1){
+							//			Value1maskIMPfinal.show();
+							//			impSLICE2.show();// 
+							//			return; 
+							//		}
 							
 							for(int ivx2=0; ivx2<sumpx; ivx2++){//multiply images
 								int pix1 = ipforfunc2.get(ivx2);
@@ -2643,20 +2657,20 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 								ipforfunc2.set(ivx2, pix1*pix2);
 							}// multiply slice and gradient mask
 							
-					//		if(test==1  && isli==1){
-						
-					//			impSLICE2.show();// 
-					//			return; 
-					//		}
+							//		if(test==1  && isli==1){
+							
+							//			impSLICE2.show();// 
+							//			return; 
+							//		}
 							
 							//ipforfunc2 = deleteMatchZandCreateZnegativeScoreIMG (ipforfunc2,IPOriStackResult,IP10pxRGBmaskfinal,sumpx);
 							impSLICE2 = deleteMatchZandCreateZnegativeScoreIMG (impSLICE2,impOriStackResult,imp10pxRGBmaskfinal,sumpx);
 							
 							
-					//		if(test==1  && isli==2){
-					//			impSLICE2.show();// 
-					//			return; 
-					//		}
+							//		if(test==1  && isli==2){
+							//			impSLICE2.show();// 
+							//			return; 
+							//		}
 							
 							long SampleToMask=sumPXmeasure(impSLICE2);
 							
@@ -2818,10 +2832,75 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 			
 			ImageStack Stackfinal = new ImageStack (WW,HH);
 			
-			for(int inew=0; inew<Finslice; inew++){
+			for(int inew=0; inew<Finslice; inew++){// score and sorting
 				
+				int FLindex=-1;
 				double Totalscore = Double.parseDouble(gaparray[inew]);
 				String slicename="";
+				
+				String DUPslicename="";
+				int [] FLslice= new int [totalnamearray.length];
+				
+				for(int iscan=0; iscan<totalnamearray.length; iscan++){
+					String [] arg2=totalnamearray[iscan].split(" ");
+					
+					//IJ.log("arg2[0]; "+arg2[0]+"   totalnamearray[iscan]; "+totalnamearray[iscan]);
+					double arg2_0=Double.parseDouble(arg2[0]);
+					
+					//if(test==1){
+					//		return;
+					//	}
+					DUPslicename=arg2[1];
+					//			IJ.log("2977 DUPslicename; "+DUPslicename+"   FLindex; "+FLindex);
+					
+					if(!DUPslicename.equals("NN")){
+						
+						FLindex=DUPslicename.lastIndexOf("_FL");
+						if(FLindex!=-1){
+							String oribodyID =DUPslicename.substring(0,FLindex)+".tif";
+							int underindex = oribodyID.indexOf("_");
+							String oribodyIDtrue = oribodyID.substring(underindex+1,oribodyID.length());// body ID of FL slice
+							
+							for(int ibodyID=0; ibodyID<totalnamearray.length; ibodyID++){
+								String [] argsearch = totalnamearray[ibodyID].split(" ");
+								
+								double targetScore = Double.parseDouble(argsearch[0]);
+								String targetName = argsearch[1];
+								if(!targetName.equals("NN")){
+									
+									int FLindex2=targetName.lastIndexOf("_FL");
+									if(FLindex2==-1){
+										
+										int underindextarget = targetName.indexOf("_");
+										String targetName2 = targetName.substring(underindextarget+1,targetName.length());// body ID of FL slice
+										
+										if(targetName2.equals(oribodyIDtrue)){
+											IJ.log("targetName2; "+targetName2+"  oribodyIDtrue; "+oribodyIDtrue);
+											if(arg2_0>targetScore){
+												totalnamearray[ibodyID] = "0 NN";
+												totalnamearray[iscan] = arg2_0+" "+targetName;
+												FLslice[iscan]=1;
+											}else{
+												totalnamearray[iscan] = "0 NN";
+												totalnamearray[ibodyID] = targetScore+" "+targetName;
+												FLslice[iscan]=1;
+											}
+										}//	if(targetName2.equals(oribodyIDtrue)){
+									}
+								}
+							}
+						}else{//	if(FLindex!=-1){, if FL is lower score than the normal bodyID
+							
+							
+							
+						}
+					}//if(!DUPslicename.equals("NN")){
+				}//	for(int iscan=0; iscan<totalnamearray.length; iscan++){
+				
+				
+				
+				
+				
 				
 				for(int iscan=0; iscan<totalnamearray.length; iscan++){
 					String [] arg2=totalnamearray[iscan].split(" ");
@@ -2839,20 +2918,28 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 						slicename=arg2[1];
 						arg2_0=0;
 						totalnamearray[iscan]=String.valueOf(arg2[0])+" "+arg2[1];
-						iscan=totalnamearray.length;
 					}
-				}
+				}//for(int iscan=0; iscan<totalnamearray.length; iscan++){
 				
+				IJ.log("slicename; "+slicename);
+				
+				int addslice=0;
+				String ADD0="0";
+				if(inew<10)
+				ADD0="00";
+				else if(inew>99)
+				ADD0="";
+				
+				String Newslicename="N";
 				for(int searchS=1; searchS<=PositiveStackSlice; searchS++){
+					
 					String slititle=namearray[searchS-1];
 					
-					//	IJ.log("slititle; "+slititle);
+					FLindex = slititle.lastIndexOf("_FL");
 					
-					String ADD0="0";
-					if(inew<10)
-					ADD0="00";
-					else if(inew>99)
-					ADD0="";
+					Newslicename=slititle;
+					if(FLindex!=-1)
+					Newslicename=slititle.substring(0,FLindex)+".tif";
 					
 					//	IJ.log("slititle; "+slititle+"   slicename"+slicename);
 					if(slititle.equals(slicename)){
@@ -2865,14 +2952,124 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 							hitslice.drawString("Flip",WW/2-24,40,Color.white);
 						}
 						
-						Stackfinal.addSlice(ADD0+inew+"_"+gaparray[inew].substring(0,gaparray[inew].indexOf("."))+"_"+slititle, hitslice);
+						Stackfinal.addSlice(ADD0+inew+"_"+gaparray[inew].substring(0,gaparray[inew].indexOf("."))+"_"+Newslicename, hitslice);
 						
 						searchS=PositiveStackSlice+1;
-						
+						addslice=1;
 						//			IJ.log("slititle; "+slititle);
-						
 					}//if(slititle==slicename){
 				}//for(searchS=1; seachS<nSlices; searchS++){
+				
+				int fast=1;
+				
+				if(fast==0){
+					if(FLindex!=-1 && addslice==0){
+						// open slicename from virtual stack
+						
+						String dirtmp="";
+						if (st3F.isVirtual()){
+							VirtualStack vst = (VirtualStack)st3F;
+							dirtmp = vst.getDirectory();
+							
+							ImagePlus impvst=null;
+							
+							int underindex=slicename.indexOf("_");
+							FLindex = slicename.indexOf("_FL");
+							
+							Newslicename=slicename.substring(underindex+1, FLindex)+".tif";
+							
+							//		IJ.log("dirtmp; "+dirtmp+"   slicename; "+Newslicename);
+							
+							while(impvst==null){
+								impvst = IJ.openImage(dirtmp+Newslicename);
+							}
+							ImageProcessor hitslice = impvst.getProcessor();
+							
+							//		if(fliparray[inew]==1 && showFlipF==true){
+							//			hitslice.flipHorizontal();
+							
+							//			hitslice.setFont(new Font("SansSerif", Font.PLAIN, 26));
+							//			hitslice.drawString("Flip",WW/2-24,40,Color.white);
+							//		}
+							
+							Stackfinal.addSlice(ADD0+inew+"_"+gaparray[inew].substring(0,gaparray[inew].indexOf("."))+"_"+slicename+"_FL", hitslice);
+							addslice=1;
+							
+							impvst.unlock();
+							impvst.close();
+							
+						}else{// if it is not virual
+							
+							for(int isliscan=1; isliscan<=slicenumberF; isliscan++){
+								String linename = st3F.getSliceLabel(isliscan);
+								
+								int underindex=slicename.indexOf("_");
+								FLindex = slicename.indexOf("_FL");
+								
+								Newslicename=slicename.substring(underindex+1, FLindex)+".tif";
+								IJ.log("2945 linename; "+linename+"   Newslicename; "+Newslicename);
+								if(linename.equals(Newslicename)){
+									ImageProcessor hitslice = st3F.getProcessor(isliscan);//original search MIP stack
+									
+									if(fliparray[inew]==1 && showFlipF==true){
+										hitslice.flipHorizontal();
+										
+										hitslice.setFont(new Font("SansSerif", Font.PLAIN, 26));
+										hitslice.drawString("Flip",WW/2-24,40,Color.white);
+									}
+									
+									Stackfinal.addSlice(ADD0+inew+"_"+gaparray[inew].substring(0,gaparray[inew].indexOf("."))+"_"+slicename, hitslice);
+									
+									addslice=1;
+									break;
+								}
+							}
+						}
+					}//	if(addslice==0){
+					
+					
+					if(!Newslicename.equals("N") && FLindex!=-1){// need to eliminate same body ID one
+						
+						DUPslicename="";
+						
+						for(int iscan=0; iscan<totalnamearray.length; iscan++){
+							String [] arg2=totalnamearray[iscan].split(" ");
+							
+							//IJ.log("arg2[0]; "+arg2[0]+"   totalnamearray[iscan]; "+totalnamearray[iscan]);
+							double arg2_0=Double.parseDouble(arg2[0]);
+							
+							//if(test==1){
+							//		return;
+							//	}
+							DUPslicename=arg2[1];
+							//			IJ.log("2977 DUPslicename; "+DUPslicename+"   FLindex; "+FLindex);
+							
+							if(!DUPslicename.equals("NN")){
+								
+								FLindex=DUPslicename.lastIndexOf("_FL");
+								if(FLindex!=-1)
+								DUPslicename=DUPslicename.substring(0,FLindex)+".tif";
+								int underindex = DUPslicename.indexOf("_");
+								String DUPslicename2 = DUPslicename.substring(underindex+1,DUPslicename.length());
+								
+								int underindexs=Newslicename.indexOf("_",0);
+								String Newslicename2=Newslicename.substring(underindexs+1, Newslicename.length());
+								
+								
+								if(Newslicename2.equals(DUPslicename2)){
+									IJ.log("Newslicename2; "+Newslicename2+"   DUPslicename2; "+DUPslicename2+"  underindexs; "+underindexs+"  Newslicename.length(); "+Newslicename.length());
+									
+									//		IJ.log("arg2[1]; "+arg2[1]);
+									
+									arg2_0=0;
+									totalnamearray[iscan]="0 NN";
+									break;
+								}
+							}//if(!DUPslicename.equals("NN")){
+						}
+					}
+				}//	if(fast==0){
+				
 			}//for(int inew=0; inew<Finslice; inew++){
 			
 			Value1maskIMP.unlock();
@@ -2964,7 +3161,7 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 		
 		impfunc.unlock();
 		impfunc.close();
-	//	System.gc();
+		//	System.gc();
 		return impfunc;
 	}
 	
@@ -3118,7 +3315,7 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 		SLICEtifimpF.unlock();
 		SLICEtifimpF.close();
 		
-	//	System.gc();
+		//	System.gc();
 		
 		return SLICEtifimpF;
 	}//ImageProcessor deleteMatchZandCreateZnegativeScoreIMG
@@ -3312,11 +3509,11 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 	
 	private Thread[] newThreadArray() {
 		int n_cpus = Runtime.getRuntime().availableProcessors();
-	//	IJ.log("3282 n_cpus; "+n_cpus+"  threadNumE; "+threadNumE);
+		//	IJ.log("3282 n_cpus; "+n_cpus+"  threadNumE; "+threadNumE);
 		
 		if (n_cpus > threadNumE) n_cpus = threadNumE;
 		if (n_cpus <= 0) n_cpus = 1;
-	//	IJ.log("3284 n_cpus; "+n_cpus);
+		//	IJ.log("3284 n_cpus; "+n_cpus);
 		return new Thread[n_cpus];
 	}
 	
