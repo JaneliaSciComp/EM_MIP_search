@@ -2307,10 +2307,11 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 				IP10pxRGBmask = DeleteOutSideMask(IP10pxRGBmask,iphemiMIP); // RGBmask; delete out side of EM mask
 				IPflip10pxRGBmask = DeleteOutSideMask(IPflip10pxRGBmask,iphemiMIP); // flipped RGBmask; delete out side of EM mask
 				
-				//		if(test==1){
-				//		RGBMaskFlipIMP.show();// 
-				//			return RGBMaskFlipIMP; 
-				//		}
+			//	if(test==1){
+			//		RGBMaskFlipIMP.show();// 
+			//		MaskFlipIMP.show();
+			//		return RGBMaskFlipIMP; 
+			//	}
 				
 				ic = new ImageConverter(impgradientMask);
 				ic.convertToGray16();
@@ -2319,8 +2320,6 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 				ImageConverter ic2 = new ImageConverter(MaskFlipIMP);
 				ic2.convertToGray16();
 				ipgradientFlipMask = MaskFlipIMP.getProcessor();
-				
-				
 				
 				for(int ipix=0; ipix<sumpx; ipix++){// 255 binary mask creation, posi signal become 0 INV
 					if(EightIMG.get(ipix)<1)
@@ -2336,11 +2335,11 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 				
 				ipgradientFlipMask=gradientslice(ipgradientFlipMask); // make Flip gradient mask, Flipped ver of 
 				
-				//	if(test==1){
+		//			if(test==1){
 				//		impgradientMask.show();// 
-				//		MaskFlipIMP.show();// 
-				//		return impgradientMask; 
-				//	}
+		//				MaskFlipIMP.show();// 
+		//				return impgradientMask; 
+		//			}
 			}else{//	if(mirror_maskEF){
 				
 				for(int ipix=0; ipix<sumpx; ipix++){// 255 binary mask creation, posi signal become 0 INV
@@ -2382,6 +2381,11 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 			if(mirror_maskEF){
 				ipFlipValue1mask.flipHorizontal();
 				ipFlipValue1mask = DeleteOutSideMask(ipFlipValue1mask,iphemiMIP); // delete out side of emptyhemibrain region
+				
+		//		if(test==1){
+		//			impFlipValue1mask.show();
+		//			return impFlipValue1mask;
+		//		}
 			}
 			
 			hemiMIPmask.unlock();
@@ -2833,8 +2837,8 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 			int Finslice=PositiveStackSlice;
 			if(Finslice>maxnumberF)
 			Finslice=maxnumberF;
-			int [] fixedFL = new int [Finslice];
-			//	IJ.log("Finslice; "+Finslice+"   totalnamearray.length; "+totalnamearray.length);
+			int [] fixedFL = new int [totalnamearray.length+1];
+				IJ.log("Finslice; "+Finslice+"   totalnamearray.length; "+totalnamearray.length);
 			
 			ImageStack Stackfinal = new ImageStack (WW,HH);
 			
@@ -2898,14 +2902,15 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 											
 											ImageProcessor hitslice = originalresultstack.getProcessor(ibodyID+1);//original search MIP stack
 											
+											
 											hitslice.setFont(new Font("SansSerif", Font.PLAIN, 26));
-											if(fliparray[ibodyID]==1 && showFlipF.equals("ShowFlip hits on a same side"))
+											if(fliparray[ibodyID]==1 && showFlipF.equals("ShowFlip hits on a same side (Not for commissure)"))
 											hitslice.flipHorizontal();
 											
 											if(showFlipF.equals("ShowComissure matching (Bothside commissure)"))
 											hitslice.drawString("CM",WW/2-70,40,Color.white);
 											
-											if(fliparray[ibodyID]==1 && showFlipF.equals("ShowFlip hits on a same side"))
+											if(fliparray[ibodyID]==1 && showFlipF.equals("ShowFlip hits on a same side (Not for commissure)"))
 											hitslice.flipHorizontal();
 											
 											//			IJ.log(ibodyID+" targetName2; "+targetName2+"  oribodyIDtrue; "+oribodyIDtrue+"  arg2_0; "+arg2_0+"   targetScore; "+targetScore+"  iscan; "+iscan);
@@ -3012,7 +3017,7 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 										hitslice.drawString("CM",WW/2-70,40,Color.white);
 										
 										
-										if(fliparray[inew]==1 && showFlipF.equals("ShowFlip hits on a same side")){
+										if(fliparray[inew]==1 && showFlipF.equals("ShowFlip hits on a same side (Not for commissure)")){
 											hitslice.flipHorizontal();
 											
 											hitslice.setFont(new Font("SansSerif", Font.PLAIN, 26));
@@ -3067,7 +3072,7 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 									hitslice.drawString("CM",WW/2-70,40,Color.white);
 								}
 								//				IJ.log("2996 searchS; "+searchS);
-								if(fliparray[searchS-1]==1 && showFlipF.equals("ShowFlip hits on a same side")){
+								if(fliparray[searchS-1]==1 && showFlipF.equals("ShowFlip hits on a same side (Not for commissure)")){
 									hitslice.flipHorizontal();
 									hitslice.setFont(new Font("SansSerif", Font.PLAIN, 26));
 									hitslice.drawString("Flip",WW/2-24,40,Color.white);
@@ -3134,7 +3139,7 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 									if(showFlipF.equals("ShowComissure matching (Bothside commissure)"))
 									hitslice.drawString("CM",WW/2-70,40,Color.white);
 									
-									if(fliparray[inew]==1 && showFlipF.equals("ShowFlip hits on a same side")){
+									if(fliparray[inew]==1 && showFlipF.equals("ShowFlip hits on a same side (Not for commissure)")){
 										hitslice.flipHorizontal();
 										
 										hitslice.setFont(new Font("SansSerif", Font.PLAIN, 26));
@@ -3189,7 +3194,7 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 									hitslice.drawString("CM",WW/2-70,40,Color.white);
 								}
 								//				IJ.log("2996 searchS; "+searchS);
-								if(fliparray[searchS-1]==1 && showFlipF.equals("ShowFlip hits on a same side")){
+								if(fliparray[searchS-1]==1 && showFlipF.equals("ShowFlip hits on a same side (Not for commissure)")){
 									hitslice.flipHorizontal();
 									hitslice.setFont(new Font("SansSerif", Font.PLAIN, 26));
 									hitslice.drawString("Flip",WW/2-24,40,Color.white);
