@@ -171,8 +171,8 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 		boolean GradientOnTheFly_ = (boolean)Prefs.get("GradientOnTheFly_.boolean", false);
 		int maxnumber=(int)Prefs.get("maxnumber.int",100);
 		boolean shownormal=(boolean)Prefs.get("shownormal.boolean",false);
-		boolean showFlip=(boolean)Prefs.get("showFlip.boolean",false);
-		
+		String showFlip=(String)Prefs.get("showFlip.String","None");
+		boolean maskiscom=(boolean)Prefs.get("maskiscom.boolean",false);
 		
 		if(datafileE >= imageno){
 			int singleslice=0; int Maxsingleslice=0; int MaxStack=0;
@@ -233,8 +233,15 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 		gd.setInsets(0, 340, 0);
 		gd.addCheckbox("1.Add mirror search", mirror_maskE);
 		
-		gd.setInsets(0, 340, 0);
-		gd.addCheckbox("ShowFlip hits on a same side", showFlip);
+		String []	com = {"ShowFlip hits on a same side (Not for commissure)", "ShowComissure matching (Bothside commissure)","None"};
+		gd.setInsets(0, 180, 0);
+		gd.addRadioButtonGroup("Show special matching: ", com, 1, 3, showFlip);
+		
+		
+	//	gd.addCheckbox("ShowFlip hits on a same side", showFlip);
+		
+	//	gd.addCheckbox("ShowComissure matching", maskiscom);
+		
 		
 		gd.setInsets(20, 0, 0);
 		gd.addChoice("Negative Mask", negtitles, negtitles[NegMaskE]); //Negative MaskE
@@ -298,7 +305,7 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 		MaskE = gd.getNextChoiceIndex(); //MaskE
 		ThresmE=(int)gd.getNextNumber();
 		mirror_maskE = gd.getNextBoolean();
-		showFlip = gd.getNextBoolean();
+		showFlip = (String)gd.getNextRadioButton();
 		
 		NegMaskE = gd.getNextChoiceIndex(); //Negative MaskE
 		NegThresmE=(int)gd.getNextNumber();
@@ -395,7 +402,9 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 		Prefs.set("threadNumE.int",threadNumE);
 		Prefs.set("maxnumber.int",maxnumber);
 		Prefs.set("shownormal.boolean",shownormal);
-		Prefs.set("showFlip.boolean",showFlip);
+		Prefs.set("showFlip.String",showFlip);
+	
+		
 		
 		double pixfludub=pixfluE/100;
 		//	IJ.log(" pixfludub;"+String.valueOf(pixfludub));
@@ -662,7 +671,7 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 							
 							int FLindex = r.m_name.lastIndexOf("_FL");
 							
-							//		IJ.log("r.m_name; "+r.m_name);
+							//			IJ.log("r.m_name; "+r.m_name);
 							
 							if(FLindex!=-1)
 							FLpositive=FLpositive+1;
@@ -742,11 +751,12 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 						
 						int FLindex = r.m_name.lastIndexOf("_FL");
 						
-						//	IJ.log("r.m_name; "+r.m_name);
+						//IJ.log("r.m_name; "+r.m_name);
 						
-						if(FLindex!=-1)
-						FLpositive=FLpositive+1;
-						
+						if(FLindex!=-1){
+							FLpositive=FLpositive+1;
+							
+						}
 						posislice=posislice+1;
 					}
 				}
@@ -2142,7 +2152,7 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 		
 	}//public class ColorMIPMaskCompare {
 	
-	ImagePlus CDM_area_measure (ImagePlus impstack, ImagePlus impmask, final String gradientDIR, final boolean rungradientonthefly, final int ThresmEf, final int maxnumberF,final boolean mirror_maskEF, boolean showFlipF, final int threadNumEF, int FLpositiveF, ImageStack st3F, int slicenumberF){
+	ImagePlus CDM_area_measure (ImagePlus impstack, ImagePlus impmask, final String gradientDIR, final boolean rungradientonthefly, final int ThresmEf, final int maxnumberF,final boolean mirror_maskEF, String showFlipF, final int threadNumEF, int FLpositiveF, ImageStack st3F, int slicenumberF){
 		
 		int Threval=0; int stackslicenum=0;
 		
@@ -2284,8 +2294,6 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 			
 			if(mirror_maskEF){
 				ipgradientFlipMask.flipHorizontal();
-				
-				
 				IPflip10pxRGBmask.flipHorizontal();// flipped RGBmask
 				//		if(test==1){
 				
@@ -2548,8 +2556,6 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 							
 							SLICEtifimp = deleteMatchZandCreateZnegativeScoreIMG (SLICEtifimp,impOriStackResult,imp10pxRGBmaskfinal,sumpx);
 							
-							
-							
 							//		if(test==1 && isli==18){
 							//			SLICEtifimp.show();
 							//			return;
@@ -2559,8 +2565,6 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 							
 							SLICEtifimp.unlock();
 							SLICEtifimp.close();
-							
-							
 							
 							long MaskToSampleFlip=0;
 							//// flip ////////////////////////////////////
@@ -2829,8 +2833,16 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 			int Finslice=PositiveStackSlice;
 			if(Finslice>maxnumberF)
 			Finslice=maxnumberF;
+			int [] fixedFL = new int [Finslice];
+			//	IJ.log("Finslice; "+Finslice+"   totalnamearray.length; "+totalnamearray.length);
 			
 			ImageStack Stackfinal = new ImageStack (WW,HH);
+			
+			for(int ifill=0; ifill<fixedFL.length; ifill++ ){
+				fixedFL[ifill]=-1;	
+				
+				//	IJ.log(ifill+"totalnamearray[ifill]; "+totalnamearray[ifill]);
+			}
 			
 			for(int inew=0; inew<Finslice; inew++){// score and sorting
 				
@@ -2838,70 +2850,86 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 				double Totalscore = Double.parseDouble(gaparray[inew]);
 				String slicename="";
 				
-				String DUPslicename="";
-				int [] FLslice= new int [totalnamearray.length];
+				String oribodyID="";
+				
 				
 				for(int iscan=0; iscan<totalnamearray.length; iscan++){
 					String [] arg2=totalnamearray[iscan].split(" ");
 					
-					//IJ.log("arg2[0]; "+arg2[0]+"   totalnamearray[iscan]; "+totalnamearray[iscan]);
+					//		IJ.log(iscan+" arg2[0]; "+arg2[0]+"   totalnamearray[iscan]; "+totalnamearray[iscan]);
 					double arg2_0=Double.parseDouble(arg2[0]);
 					
 					//if(test==1){
 					//		return;
 					//	}
-					DUPslicename=arg2[1];
+					oribodyID=arg2[1];
 					//			IJ.log("2977 DUPslicename; "+DUPslicename+"   FLindex; "+FLindex);
 					
-					if(!DUPslicename.equals("NN")){
+					FLindex=oribodyID.lastIndexOf("_FL");
+					if(FLindex!=-1){
 						
-						FLindex=DUPslicename.lastIndexOf("_FL");
-						if(FLindex!=-1){
-							String oribodyID =DUPslicename.substring(0,FLindex)+".tif";
-							int underindex = oribodyID.indexOf("_");
-							String oribodyIDtrue = oribodyID.substring(underindex+1,oribodyID.length());// body ID of FL slice
+						int underindex = oribodyID.indexOf("_");	
+						String oribodyIDtrue = oribodyID.substring(underindex+1,FLindex)+".tif";// body ID of FL slice
+						
+						
+						for(int ibodyID=0; ibodyID<totalnamearray.length; ibodyID++){
+							String [] argsearch = totalnamearray[ibodyID].split(" ");
 							
-							for(int ibodyID=0; ibodyID<totalnamearray.length; ibodyID++){
-								String [] argsearch = totalnamearray[ibodyID].split(" ");
+							double targetScore = Double.parseDouble(argsearch[0]);
+							String targetName = argsearch[1];
+							if(!targetName.equals("NN")){
 								
-								double targetScore = Double.parseDouble(argsearch[0]);
-								String targetName = argsearch[1];
-								if(!targetName.equals("NN")){
+								int FLindex2=targetName.lastIndexOf("_FL");
+								if(FLindex2==-1){
 									
-									int FLindex2=targetName.lastIndexOf("_FL");
-									if(FLindex2==-1){
+									int underindextarget = targetName.indexOf("_");
+									String targetName2 = targetName.substring(underindextarget+1,targetName.length());// body ID of FL slice
+									
+									if(targetName2.equals(oribodyIDtrue)){
 										
-										int underindextarget = targetName.indexOf("_");
-										String targetName2 = targetName.substring(underindextarget+1,targetName.length());// body ID of FL slice
+										if(oribodyIDtrue.equals("517514142_RT_18U.tif"))
+										IJ.log(iscan+" targetName2; "+targetName2+"  oribodyIDtrue; "+oribodyIDtrue+"  ibodyID; "+ibodyID+"  arg2_0; "+arg2_0+"  targetScore; "+targetScore);
 										
-										if(targetName2.equals(oribodyIDtrue)){
-											IJ.log("targetName2; "+targetName2+"  oribodyIDtrue; "+oribodyIDtrue);
-											if(arg2_0>targetScore){
-												totalnamearray[ibodyID] = "0 NN";
-												totalnamearray[iscan] = arg2_0+" "+targetName;
-												FLslice[iscan]=1;
-											}else{
-												totalnamearray[iscan] = "0 NN";
-												totalnamearray[ibodyID] = targetScore+" "+targetName;
-												FLslice[iscan]=1;
-											}
-										}//	if(targetName2.equals(oribodyIDtrue)){
-									}
+										//				IJ.log("targetName2; "+targetName2+"  oribodyIDtrue; "+oribodyIDtrue);
+										
+										totalnamearray[iscan] = "0 NN";
+										
+										if(arg2_0>targetScore){
+											
+											ImageProcessor hitslice = originalresultstack.getProcessor(ibodyID+1);//original search MIP stack
+											
+											hitslice.setFont(new Font("SansSerif", Font.PLAIN, 26));
+											if(fliparray[ibodyID]==1 && showFlipF.equals("ShowFlip hits on a same side"))
+											hitslice.flipHorizontal();
+											
+											if(showFlipF.equals("ShowComissure matching (Bothside commissure)"))
+											hitslice.drawString("CM",WW/2-70,40,Color.white);
+											
+											if(fliparray[ibodyID]==1 && showFlipF.equals("ShowFlip hits on a same side"))
+											hitslice.flipHorizontal();
+											
+											//			IJ.log(ibodyID+" targetName2; "+targetName2+"  oribodyIDtrue; "+oribodyIDtrue+"  arg2_0; "+arg2_0+"   targetScore; "+targetScore+"  iscan; "+iscan);
+											totalnamearray[ibodyID] = arg2_0+" "+targetName;
+											//		IJ.log("targetName; "+targetName+"   iscan; "+iscan);
+											
+											fixedFL[ibodyID]=ibodyID;
+											break;
+										}else{
+											totalnamearray[ibodyID] = targetScore+" "+targetName;
+											
+											//				IJ.log("2893targetName; "+targetName);
+											break;
+										}
+									}//	if(targetName2.equals(oribodyIDtrue)){
 								}
-							}
-						}else{//	if(FLindex!=-1){, if FL is lower score than the normal bodyID
-							
-							
-							
+								
+							}//if(!targetName.equals("NN")){
 						}
-					}//if(!DUPslicename.equals("NN")){
+						
+					}
 				}//	for(int iscan=0; iscan<totalnamearray.length; iscan++){
 				
 				
-				
-				
-				
-				
 				for(int iscan=0; iscan<totalnamearray.length; iscan++){
 					String [] arg2=totalnamearray[iscan].split(" ");
 					
@@ -2912,164 +2940,275 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 					//		return;
 					//	}
 					
-					if(arg2_0==Totalscore){
-						
-						//		IJ.log("arg2[1]; "+arg2[1]);
+					if(arg2_0==Totalscore && arg2_0!=0){
 						slicename=arg2[1];
+						
+						if(slicename.equals("001.04_517514142_RT_18U.tif"))
+						IJ.log("slicename; "+slicename+"  Totalscore; "+Totalscore);
+						
 						arg2_0=0;
 						totalnamearray[iscan]=String.valueOf(arg2[0])+" "+arg2[1];
+						iscan=totalnamearray.length;
+						break;
 					}
 				}//for(int iscan=0; iscan<totalnamearray.length; iscan++){
 				
-				IJ.log("slicename; "+slicename);
+				//		IJ.log("slicename; "+slicename);
 				
-				int addslice=0;
 				String ADD0="0";
 				if(inew<10)
 				ADD0="00";
 				else if(inew>99)
 				ADD0="";
 				
-				String Newslicename="N";
-				for(int searchS=1; searchS<=PositiveStackSlice; searchS++){
-					
-					String slititle=namearray[searchS-1];
-					
-					FLindex = slititle.lastIndexOf("_FL");
-					
-					Newslicename=slititle;
-					if(FLindex!=-1)
-					Newslicename=slititle.substring(0,FLindex)+".tif";
-					
-					//	IJ.log("slititle; "+slititle+"   slicename"+slicename);
-					if(slititle.equals(slicename)){
-						ImageProcessor hitslice = originalresultstack.getProcessor(searchS);//original search MIP stack
+				if(!slicename.equals("NN")){
+					String Newslicename="N";
+					for(int searchS=1; searchS<=Finslice; searchS++){
 						
-						if(fliparray[searchS-1]==1 && showFlipF==true){
-							hitslice.flipHorizontal();
-							
-							hitslice.setFont(new Font("SansSerif", Font.PLAIN, 26));
-							hitslice.drawString("Flip",WW/2-24,40,Color.white);
-						}
+						String [] slititle = totalnamearray[searchS-1].split(" ");
 						
-						Stackfinal.addSlice(ADD0+inew+"_"+gaparray[inew].substring(0,gaparray[inew].indexOf("."))+"_"+Newslicename, hitslice);
+						if(slicename.equals("001.04_517514142_RT_18U.tif"))
+						IJ.log(String.valueOf (searchS));
+						//	if(slicename.equals("001.04_517514142_RT_18U.tif"))
+						//	IJ.log(searchS+" slititle[1]; "+slititle[1]+"   slicename"+slicename);
 						
-						searchS=PositiveStackSlice+1;
-						addslice=1;
-						//			IJ.log("slititle; "+slititle);
-					}//if(slititle==slicename){
-				}//for(searchS=1; seachS<nSlices; searchS++){
-				
-				int fast=1;
-				
-				if(fast==0){
-					if(FLindex!=-1 && addslice==0){
-						// open slicename from virtual stack
 						
-						String dirtmp="";
-						if (st3F.isVirtual()){
-							VirtualStack vst = (VirtualStack)st3F;
-							dirtmp = vst.getDirectory();
+						
+						FLindex = slititle[1].lastIndexOf("_FL");
+						
+						if(FLindex!=-1){//if(FLindex!=-1){
 							
-							ImagePlus impvst=null;
+							int underindex=slititle[1].indexOf("_");
+							FLindex = slititle[1].indexOf("_FL");
 							
-							int underindex=slicename.indexOf("_");
-							FLindex = slicename.indexOf("_FL");
+							//	String savename=slititle[1].substring(0, FLindex)+"tif";
+							Newslicename=slititle[1].substring(underindex+1, FLindex)+".tif";
 							
-							Newslicename=slicename.substring(underindex+1, FLindex)+".tif";
+							if(slicename.equals("001.04_517514142_RT_18U.tif"))
+							IJ.log("Newslicename; "+Newslicename+"  fixedFL[searchS-1]; "+fixedFL[searchS-1]);
 							
-							//		IJ.log("dirtmp; "+dirtmp+"   slicename; "+Newslicename);
-							
-							while(impvst==null){
-								impvst = IJ.openImage(dirtmp+Newslicename);
-							}
-							ImageProcessor hitslice = impvst.getProcessor();
-							
-							//		if(fliparray[inew]==1 && showFlipF==true){
-							//			hitslice.flipHorizontal();
-							
-							//			hitslice.setFont(new Font("SansSerif", Font.PLAIN, 26));
-							//			hitslice.drawString("Flip",WW/2-24,40,Color.white);
-							//		}
-							
-							Stackfinal.addSlice(ADD0+inew+"_"+gaparray[inew].substring(0,gaparray[inew].indexOf("."))+"_"+slicename+"_FL", hitslice);
-							addslice=1;
-							
-							impvst.unlock();
-							impvst.close();
-							
-						}else{// if it is not virual
-							
-							for(int isliscan=1; isliscan<=slicenumberF; isliscan++){
-								String linename = st3F.getSliceLabel(isliscan);
-								
-								int underindex=slicename.indexOf("_");
-								FLindex = slicename.indexOf("_FL");
-								
-								Newslicename=slicename.substring(underindex+1, FLindex)+".tif";
-								IJ.log("2945 linename; "+linename+"   Newslicename; "+Newslicename);
-								if(linename.equals(Newslicename)){
-									ImageProcessor hitslice = st3F.getProcessor(isliscan);//original search MIP stack
+							if(Newslicename.equals(slicename)){
+								if(fixedFL[searchS-1]==-1){// does not have the bodyIDfile open
 									
-									if(fliparray[inew]==1 && showFlipF==true){
+									String savename=slititle[1];
+									
+									if (st3F.isVirtual()){
+										VirtualStack vst = (VirtualStack)st3F;
+										String dirtmp = vst.getDirectory();
+										
+										ImagePlus impvst=null;
+										
+										//		IJ.log("dirtmp; "+dirtmp+"   slicename; "+Newslicename);
+										
+										while(impvst==null){
+											impvst = IJ.openImage(dirtmp+Newslicename);
+										}
+										ImageProcessor hitslice = impvst.getProcessor();
+										
+										
+										hitslice.setFont(new Font("SansSerif", Font.PLAIN, 26));
+										
+										if(showFlipF.equals("ShowComissure matching (Bothside commissure)"))
+										hitslice.drawString("CM",WW/2-70,40,Color.white);
+										
+										
+										if(fliparray[inew]==1 && showFlipF.equals("ShowFlip hits on a same side")){
+											hitslice.flipHorizontal();
+											
+											hitslice.setFont(new Font("SansSerif", Font.PLAIN, 26));
+											hitslice.drawString("Flip",WW/2-24,40,Color.white);
+										}
+										
+										if(slicename.equals("001.04_517514142_RT_18U.tif"))
+										IJ.log("2975 searchS; "+searchS+"  Newslicename; "+Newslicename);
+										
+										Stackfinal.addSlice(ADD0+inew+"_"+gaparray[inew].substring(0,gaparray[inew].indexOf("."))+"_"+savename, hitslice);
+										//		IJ.log("2993 savename; "+savename);
+										totalnamearray[searchS-1]="0 NN";
+										
+										impvst.unlock();
+										impvst.close();
+										break;
+									}
+									
+								}
+							}
+							
+						}//if(FLindex!=-1){
+						
+						if(FLindex==-1){
+							
+							//	int underindex=slititle[1].indexOf("_");
+							String savename2=slititle[1];
+							if(fixedFL[searchS-1]!=-1){
+								int dotindex=slititle[1].lastIndexOf(".");
+								
+								//	IJ.log("3010savename; "+savename+"  dotindex; "+dotindex);
+								
+								if(dotindex!=-1){
+									savename2=slititle[1].substring(0, dotindex)+"_FL.tif";
+								}else{
+									
+									savename2=slititle[1]+"_FL.tif";
+								}
+								//		IJ.log("3016savename; "+savename2+"  dotindex; "+dotindex+"  slicename; "+slicename);
+							}
+							
+							//	
+							
+							if(slicename.equals("001.04_517514142_RT_18U.tif"))
+							IJ.log(searchS+" slititle[1]; "+slititle[1]+"   slicename"+slicename+"  Finslice; "+Finslice);
+							
+							if(slititle[1].equals(slicename)){
+								ImageProcessor hitslice = originalresultstack.getProcessor(searchS);//original search MIP stack
+								
+								if(fixedFL[searchS-1]!=-1 && showFlipF.equals("ShowComissure matching (Bothside commissure)")){// floorfixed
+									hitslice.setFont(new Font("SansSerif", Font.PLAIN, 26));
+									hitslice.drawString("CM",WW/2-70,40,Color.white);
+								}
+								//				IJ.log("2996 searchS; "+searchS);
+								if(fliparray[searchS-1]==1 && showFlipF.equals("ShowFlip hits on a same side")){
+									hitslice.flipHorizontal();
+									hitslice.setFont(new Font("SansSerif", Font.PLAIN, 26));
+									hitslice.drawString("Flip",WW/2-24,40,Color.white);
+								}
+								
+								Stackfinal.addSlice(ADD0+inew+"_"+gaparray[inew].substring(0,gaparray[inew].indexOf("."))+"_"+savename2, hitslice);
+								
+								totalnamearray[searchS-1]="0 NN";
+								
+								if(slicename.equals("001.04_517514142_RT_18U.tif"))
+								IJ.log("3037 savename2; "+savename2+"  fixedFL[searchS-1]; "+fixedFL[searchS-1]+"  searchS-1; "+searchS);
+								break;
+							}
+							//		addslice=1;
+							//			IJ.log("slititle; "+slititle);
+						}//if(slititle==slicename){
+					}//for(searchS=1; seachS<nSlices; searchS++){
+					
+					for(int searchS=1; searchS<=Finslice; searchS++){
+						
+						String [] slititle = totalnamearray[searchS-1].split(" ");
+						
+						if(slicename.equals("001.04_517514142_RT_18U.tif"))
+						IJ.log(String.valueOf (searchS));
+						//	if(slicename.equals("001.04_517514142_RT_18U.tif"))
+						//	IJ.log(searchS+" slititle[1]; "+slititle[1]+"   slicename"+slicename);
+						
+						double scorefinal = Double.parseDouble(slititle[0]);
+						
+						FLindex = slititle[1].lastIndexOf("_FL");
+						
+						if(FLindex!=-1 && Totalscore==scorefinal){//if(FLindex!=-1){
+							
+							int underindex=slititle[1].indexOf("_");
+							FLindex = slititle[1].indexOf("_FL");
+							
+							//	String savename=slititle[1].substring(0, FLindex)+"tif";
+							Newslicename=slititle[1].substring(underindex+1, FLindex)+".tif";
+							
+							if(slicename.equals("001.04_517514142_RT_18U.tif"))
+							IJ.log("Newslicename; "+Newslicename+"  fixedFL[searchS-1]; "+fixedFL[searchS-1]);
+							
+							
+							if(fixedFL[searchS-1]==-1){// does not have the bodyIDfile open
+								
+								String savename=slititle[1];
+								
+								if (st3F.isVirtual()){
+									VirtualStack vst = (VirtualStack)st3F;
+									String dirtmp = vst.getDirectory();
+									
+									ImagePlus impvst=null;
+									
+									//		IJ.log("dirtmp; "+dirtmp+"   slicename; "+Newslicename);
+									
+									while(impvst==null){
+										impvst = IJ.openImage(dirtmp+Newslicename);
+									}
+									ImageProcessor hitslice = impvst.getProcessor();
+									
+									
+									hitslice.setFont(new Font("SansSerif", Font.PLAIN, 26));
+									
+									if(showFlipF.equals("ShowComissure matching (Bothside commissure)"))
+									hitslice.drawString("CM",WW/2-70,40,Color.white);
+									
+									if(fliparray[inew]==1 && showFlipF.equals("ShowFlip hits on a same side")){
 										hitslice.flipHorizontal();
 										
 										hitslice.setFont(new Font("SansSerif", Font.PLAIN, 26));
 										hitslice.drawString("Flip",WW/2-24,40,Color.white);
 									}
 									
-									Stackfinal.addSlice(ADD0+inew+"_"+gaparray[inew].substring(0,gaparray[inew].indexOf("."))+"_"+slicename, hitslice);
+									if(slicename.equals("001.04_517514142_RT_18U.tif"))
+									IJ.log("2975 searchS; "+searchS+"  Newslicename; "+Newslicename);
 									
-									addslice=1;
+									Stackfinal.addSlice(ADD0+inew+"_"+gaparray[inew].substring(0,gaparray[inew].indexOf("."))+"_"+savename, hitslice);
+									//		IJ.log("2993 savename; "+savename);
+									totalnamearray[searchS-1]="0 NN";
+									
+									impvst.unlock();
+									impvst.close();
 									break;
 								}
+								
 							}
-						}
-					}//	if(addslice==0){
-					
-					
-					if(!Newslicename.equals("N") && FLindex!=-1){// need to eliminate same body ID one
+							
+							
+						}//if(FLindex!=-1){
 						
-						DUPslicename="";
-						
-						for(int iscan=0; iscan<totalnamearray.length; iscan++){
-							String [] arg2=totalnamearray[iscan].split(" ");
+						if(FLindex==-1){
 							
-							//IJ.log("arg2[0]; "+arg2[0]+"   totalnamearray[iscan]; "+totalnamearray[iscan]);
-							double arg2_0=Double.parseDouble(arg2[0]);
-							
-							//if(test==1){
-							//		return;
-							//	}
-							DUPslicename=arg2[1];
-							//			IJ.log("2977 DUPslicename; "+DUPslicename+"   FLindex; "+FLindex);
-							
-							if(!DUPslicename.equals("NN")){
+							//	int underindex=slititle[1].indexOf("_");
+							String savename2=slititle[1];
+							if(fixedFL[searchS-1]!=-1){
+								int dotindex=slititle[1].lastIndexOf(".");
 								
-								FLindex=DUPslicename.lastIndexOf("_FL");
-								if(FLindex!=-1)
-								DUPslicename=DUPslicename.substring(0,FLindex)+".tif";
-								int underindex = DUPslicename.indexOf("_");
-								String DUPslicename2 = DUPslicename.substring(underindex+1,DUPslicename.length());
+								//	IJ.log("3010savename; "+savename+"  dotindex; "+dotindex);
 								
-								int underindexs=Newslicename.indexOf("_",0);
-								String Newslicename2=Newslicename.substring(underindexs+1, Newslicename.length());
-								
-								
-								if(Newslicename2.equals(DUPslicename2)){
-									IJ.log("Newslicename2; "+Newslicename2+"   DUPslicename2; "+DUPslicename2+"  underindexs; "+underindexs+"  Newslicename.length(); "+Newslicename.length());
+								if(dotindex!=-1){
+									savename2=slititle[1].substring(0, dotindex)+"_FL.tif";
+								}else{
 									
-									//		IJ.log("arg2[1]; "+arg2[1]);
-									
-									arg2_0=0;
-									totalnamearray[iscan]="0 NN";
-									break;
+									savename2=slititle[1]+"_FL.tif";
 								}
-							}//if(!DUPslicename.equals("NN")){
-						}
-					}
-				}//	if(fast==0){
-				
+								//		IJ.log("3016savename; "+savename2+"  dotindex; "+dotindex+"  slicename; "+slicename);
+							}
+							
+							//	
+							
+							if(slicename.equals("001.04_517514142_RT_18U.tif"))
+							IJ.log(searchS+" slititle[1]; "+slititle[1]+"   slicename"+slicename+"  Finslice; "+Finslice);
+							
+							if(slititle[1].equals(slicename)){
+								ImageProcessor hitslice = originalresultstack.getProcessor(searchS);//original search MIP stack
+								
+								if(fixedFL[searchS-1]!=-1 && showFlipF.equals("ShowComissure matching (Bothside commissure)")){// floorfixed
+									hitslice.setFont(new Font("SansSerif", Font.PLAIN, 26));
+									hitslice.drawString("CM",WW/2-70,40,Color.white);
+								}
+								//				IJ.log("2996 searchS; "+searchS);
+								if(fliparray[searchS-1]==1 && showFlipF.equals("ShowFlip hits on a same side")){
+									hitslice.flipHorizontal();
+									hitslice.setFont(new Font("SansSerif", Font.PLAIN, 26));
+									hitslice.drawString("Flip",WW/2-24,40,Color.white);
+								}
+								
+								Stackfinal.addSlice(ADD0+inew+"_"+gaparray[inew].substring(0,gaparray[inew].indexOf("."))+"_"+savename2, hitslice);
+								
+								totalnamearray[searchS-1]="0 NN";
+								if(slicename.equals("001.04_517514142_RT_18U.tif"))
+								IJ.log("3037 savename2; "+savename2+"  fixedFL[searchS-1]; "+fixedFL[searchS-1]+"  searchS-1; "+searchS);
+								break;
+							}
+							//		addslice=1;
+							//			IJ.log("slititle; "+slititle);
+						}//if(slititle==slicename){
+					}//for(searchS=1; seachS<nSlices; searchS++){
+					
+					
+				}//if(!slicename.equals("NN")){
 			}//for(int inew=0; inew<Finslice; inew++){
 			
 			Value1maskIMP.unlock();
