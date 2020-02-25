@@ -2634,7 +2634,7 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 								File f = new File(gradientDIR+filename);
 								if (!f.exists()){
 									IJ.log("The file cannot open; "+gradientDIR+filename);
-									return;
+							//		return;
 									
 								}else{
 									
@@ -2835,10 +2835,10 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 			//Array.show(gaparray);
 			
 			int Finslice=PositiveStackSlice;
-			if(Finslice>maxnumberF)
-			Finslice=maxnumberF;
+		//	if(Finslice>maxnumberF)
+		//	Finslice=maxnumberF;
 			int [] fixedFL = new int [totalnamearray.length+1];
-				IJ.log("Finslice; "+Finslice+"   totalnamearray.length; "+totalnamearray.length);
+			IJ.log("Finslice; "+Finslice+"   totalnamearray.length; "+totalnamearray.length);
 			
 			ImageStack Stackfinal = new ImageStack (WW,HH);
 			
@@ -2847,8 +2847,12 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 				
 				//	IJ.log(ifill+"totalnamearray[ifill]; "+totalnamearray[ifill]);
 			}
+			int addedslice=0;
 			
 			for(int inew=0; inew<Finslice; inew++){// score and sorting
+				
+				if(addedslice>=maxnumberF)
+				break;
 				
 				int FLindex=-1;
 				double Totalscore = Double.parseDouble(gaparray[inew]);
@@ -2891,8 +2895,8 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 									
 									if(targetName2.equals(oribodyIDtrue)){
 										
-										if(oribodyIDtrue.equals("517514142_RT_18U.tif"))
-										IJ.log(iscan+" targetName2; "+targetName2+"  oribodyIDtrue; "+oribodyIDtrue+"  ibodyID; "+ibodyID+"  arg2_0; "+arg2_0+"  targetScore; "+targetScore);
+							////			if(oribodyIDtrue.equals("517514142_RT_18U.tif"))
+								//		IJ.log(iscan+" targetName2; "+targetName2+"  oribodyIDtrue; "+oribodyIDtrue+"  ibodyID; "+ibodyID+"  arg2_0; "+arg2_0+"  targetScore; "+targetScore);
 										
 										//				IJ.log("targetName2; "+targetName2+"  oribodyIDtrue; "+oribodyIDtrue);
 										
@@ -2948,8 +2952,8 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 					if(arg2_0==Totalscore && arg2_0!=0){
 						slicename=arg2[1];
 						
-						if(slicename.equals("001.04_517514142_RT_18U.tif"))
-						IJ.log("slicename; "+slicename+"  Totalscore; "+Totalscore);
+			//			if(slicename.equals("001.04_517514142_RT_18U.tif"))
+			//			IJ.log("slicename; "+slicename+"  Totalscore; "+Totalscore);
 						
 						arg2_0=0;
 						totalnamearray[iscan]=String.valueOf(arg2[0])+" "+arg2[1];
@@ -2972,8 +2976,8 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 						
 						String [] slititle = totalnamearray[searchS-1].split(" ");
 						
-						if(slicename.equals("001.04_517514142_RT_18U.tif"))
-						IJ.log(String.valueOf (searchS));
+			//			if(slicename.equals("001.04_517514142_RT_18U.tif"))
+			//			IJ.log(String.valueOf (searchS));
 						//	if(slicename.equals("001.04_517514142_RT_18U.tif"))
 						//	IJ.log(searchS+" slititle[1]; "+slititle[1]+"   slicename"+slicename);
 						
@@ -3031,6 +3035,8 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 										//		IJ.log("2993 savename; "+savename);
 										totalnamearray[searchS-1]="0 NN";
 										
+										addedslice=addedslice+1;
+										
 										impvst.unlock();
 										impvst.close();
 										break;
@@ -3061,8 +3067,8 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 							
 							//	
 							
-							if(slicename.equals("001.04_517514142_RT_18U.tif"))
-							IJ.log(searchS+" slititle[1]; "+slititle[1]+"   slicename"+slicename+"  Finslice; "+Finslice);
+					//		if(slicename.equals("001.04_517514142_RT_18U.tif"))
+					//		IJ.log(searchS+" slititle[1]; "+slititle[1]+"   slicename"+slicename+"  Finslice; "+Finslice);
 							
 							if(slititle[1].equals(slicename)){
 								ImageProcessor hitslice = originalresultstack.getProcessor(searchS);//original search MIP stack
@@ -3079,11 +3085,11 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 								}
 								
 								Stackfinal.addSlice(ADD0+inew+"_"+gaparray[inew].substring(0,gaparray[inew].indexOf("."))+"_"+savename2, hitslice);
-								
+								addedslice=addedslice+1;
 								totalnamearray[searchS-1]="0 NN";
 								
-								if(slicename.equals("001.04_517514142_RT_18U.tif"))
-								IJ.log("3037 savename2; "+savename2+"  fixedFL[searchS-1]; "+fixedFL[searchS-1]+"  searchS-1; "+searchS);
+					//			if(slicename.equals("001.04_517514142_RT_18U.tif"))
+					//			IJ.log("3037 savename2; "+savename2+"  fixedFL[searchS-1]; "+fixedFL[searchS-1]+"  searchS-1; "+searchS);
 								break;
 							}
 							//		addslice=1;
@@ -3095,8 +3101,8 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 						
 						String [] slititle = totalnamearray[searchS-1].split(" ");
 						
-						if(slicename.equals("001.04_517514142_RT_18U.tif"))
-						IJ.log(String.valueOf (searchS));
+					//	if(slicename.equals("001.04_517514142_RT_18U.tif"))
+					//	IJ.log(String.valueOf (searchS));
 						//	if(slicename.equals("001.04_517514142_RT_18U.tif"))
 						//	IJ.log(searchS+" slititle[1]; "+slititle[1]+"   slicename"+slicename);
 						
@@ -3112,8 +3118,8 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 							//	String savename=slititle[1].substring(0, FLindex)+"tif";
 							Newslicename=slititle[1].substring(underindex+1, FLindex)+".tif";
 							
-							if(slicename.equals("001.04_517514142_RT_18U.tif"))
-							IJ.log("Newslicename; "+Newslicename+"  fixedFL[searchS-1]; "+fixedFL[searchS-1]);
+						//	if(slicename.equals("001.04_517514142_RT_18U.tif"))
+						//	IJ.log("Newslicename; "+Newslicename+"  fixedFL[searchS-1]; "+fixedFL[searchS-1]);
 							
 							
 							if(fixedFL[searchS-1]==-1){// does not have the bodyIDfile open
@@ -3146,12 +3152,13 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 										hitslice.drawString("Flip",WW/2-24,40,Color.white);
 									}
 									
-									if(slicename.equals("001.04_517514142_RT_18U.tif"))
-									IJ.log("2975 searchS; "+searchS+"  Newslicename; "+Newslicename);
+							//		if(slicename.equals("001.04_517514142_RT_18U.tif"))
+						//			IJ.log("2975 searchS; "+searchS+"  Newslicename; "+Newslicename);
 									
 									Stackfinal.addSlice(ADD0+inew+"_"+gaparray[inew].substring(0,gaparray[inew].indexOf("."))+"_"+savename, hitslice);
 									//		IJ.log("2993 savename; "+savename);
 									totalnamearray[searchS-1]="0 NN";
+									addedslice=addedslice+1;
 									
 									impvst.unlock();
 									impvst.close();
@@ -3159,8 +3166,6 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 								}
 								
 							}
-							
-							
 						}//if(FLindex!=-1){
 						
 						if(FLindex==-1){
@@ -3183,8 +3188,8 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 							
 							//	
 							
-							if(slicename.equals("001.04_517514142_RT_18U.tif"))
-							IJ.log(searchS+" slititle[1]; "+slititle[1]+"   slicename"+slicename+"  Finslice; "+Finslice);
+					//		if(slicename.equals("001.04_517514142_RT_18U.tif"))
+					//		IJ.log(searchS+" slititle[1]; "+slititle[1]+"   slicename"+slicename+"  Finslice; "+Finslice);
 							
 							if(slititle[1].equals(slicename)){
 								ImageProcessor hitslice = originalresultstack.getProcessor(searchS);//original search MIP stack
@@ -3201,10 +3206,11 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 								}
 								
 								Stackfinal.addSlice(ADD0+inew+"_"+gaparray[inew].substring(0,gaparray[inew].indexOf("."))+"_"+savename2, hitslice);
+								addedslice=addedslice+1;
 								
 								totalnamearray[searchS-1]="0 NN";
-								if(slicename.equals("001.04_517514142_RT_18U.tif"))
-								IJ.log("3037 savename2; "+savename2+"  fixedFL[searchS-1]; "+fixedFL[searchS-1]+"  searchS-1; "+searchS);
+				//				if(slicename.equals("001.04_517514142_RT_18U.tif"))
+				//				IJ.log("3037 savename2; "+savename2+"  fixedFL[searchS-1]; "+fixedFL[searchS-1]+"  searchS-1; "+searchS);
 								break;
 							}
 							//		addslice=1;
@@ -3222,6 +3228,9 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 			MaskFlipIMP.unlock();
 			MaskFlipIMP.hide();
 			MaskFlipIMP.close();
+			
+	//		for(int ipri=0; ipri<=Finslice; ipri++)
+	//		IJ.log(totalnamearray[ipri]+"  "+ipri);
 			
 			//		impstack.unlock();
 			//		impstack.hide();
