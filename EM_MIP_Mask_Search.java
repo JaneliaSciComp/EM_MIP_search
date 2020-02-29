@@ -41,8 +41,8 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 	int pix1=0, CheckPost,UniqueLineName=0,IsPosi,threadNumE=0,FLpositive=0;
 	int pix3=0,Check=0,arrayPosition=0,dupdel=1,FinalAdded=1,enddup=0;
 	ImagePlus newimp, newimpOri;
-	String linename,LineNo, LineNo2,preLineNo="A",FullName,LineName,arrayName,PostName;
-	String args [] = new String[10],PreFullLineName,ScorePre,TopShortLinename,negativeradius="";
+	String linename,LineNo, LineNo2,preLineNo="A",FullName,LineName,arrayName,PostName,negativeradius="";
+	String args [] = new String[10],PreFullLineName,ScorePre,TopShortLinename;
 	
 	ExecutorService m_executor;
 	
@@ -260,7 +260,7 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 		
 		String []	com2 = {"10","5"};//"ShowComissure matching (Bothside commissure)"
 		gd.setInsets(0, 180, 0);
-		gd.addRadioButtonGroup("Negative score region radius: ", com2, 1, 2, negativeradius, " px");
+		gd.addRadioButtonGroup("Negative score region radius: px ", com2, 1, 2, negativeradius);
 		
 		gd.setInsets(20, 0, 0);
 		gd.addNumericField("Positive PX % Threshold: EM matching is 0.5-1.5%", pixThresE, 4);
@@ -2243,8 +2243,8 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 			//		}
 		
 			
-			IJ.run(impgradientMask,"Maximum...", "radius=10");
-			IJ.run(imp10pxRGBmask,"Maximum...", "radius=10");
+			IJ.run(impgradientMask,"Maximum...", "radius="+negativeradius+"");
+			IJ.run(imp10pxRGBmask,"Maximum...", "radius="+negativeradius+"");
 			
 			String lastcha=gradientDIR.substring(gradientDIR.length()-1,gradientDIR.length());
 			final String OSTYPE = System.getProperty("os.name").toLowerCase();
@@ -2462,7 +2462,7 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 					}
 				}
 				
-				IJ.run(Stack2IMP,"Maximum...", "radius=10");
+				IJ.run(Stack2IMP,"Maximum...", "radius="+negativeradius+"");
 				
 				ic = new ImageConverter(Stack2IMP);
 				ic.convertToGray16();
