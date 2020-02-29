@@ -42,7 +42,7 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 	int pix3=0,Check=0,arrayPosition=0,dupdel=1,FinalAdded=1,enddup=0;
 	ImagePlus newimp, newimpOri;
 	String linename,LineNo, LineNo2,preLineNo="A",FullName,LineName,arrayName,PostName;
-	String args [] = new String[10],PreFullLineName,ScorePre,TopShortLinename;
+	String args [] = new String[10],PreFullLineName,ScorePre,TopShortLinename,negativeradius="";
 	
 	ExecutorService m_executor;
 	
@@ -173,6 +173,7 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 		boolean shownormal=(boolean)Prefs.get("shownormal.boolean",false);
 		String showFlip=(String)Prefs.get("showFlip.String","None");
 		boolean maskiscom=(boolean)Prefs.get("maskiscom.boolean",false);
+		negativeradius = (String)Prefs.get("negativeradius.String","10");
 		
 		if(datafileE >= imageno){
 			int singleslice=0; int Maxsingleslice=0; int MaxStack=0;
@@ -257,6 +258,10 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 		//	gd.addMessage("");
 		//	gd.addSlider("100x % of Positive PX Threshold", (double) 0, (double) 10000, pixThresE);
 		
+		String []	com2 = {"10","5"};//"ShowComissure matching (Bothside commissure)"
+		gd.setInsets(0, 180, 0);
+		gd.addRadioButtonGroup("Negative score region radius: ", com2, 1, 2, negativeradius, " px");
+		
 		gd.setInsets(20, 0, 0);
 		gd.addNumericField("Positive PX % Threshold: EM matching is 0.5-1.5%", pixThresE, 4);
 		gd.addSlider("Pix Color Fluctuation, +- Z slice", 0, 10, pixfluE);
@@ -312,6 +317,8 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 		mirror_negmaskE = gd.getNextBoolean();
 		datafileE = gd.getNextChoiceIndex(); //Color MIP
 		//	ThresE=(int)gd.getNextNumber();
+		
+		negativeradius = (String)gd.getNextRadioButton();
 		pixThresE=(double)gd.getNextNumber();
 		pixfluE=(double)gd.getNextNumber();
 		gradientDIR_=gd.getNextString();
@@ -403,7 +410,7 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 		Prefs.set("maxnumber.int",maxnumber);
 		Prefs.set("shownormal.boolean",shownormal);
 		Prefs.set("showFlip.String",showFlip);
-	
+		Prefs.set("negativeradius,String",negativeradius);
 		
 		
 		double pixfludub=pixfluE/100;
@@ -2234,10 +2241,9 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 			//			impgradientMask.show();
 			//			return impgradientMask;
 			//		}
+		
 			
-			IJ.run(impgradientMask,"Max Filter2D", "expansion=10 cpu=1 xyscaling=1");
-			//		IJ.run(imp10pxRGBmask, "Max Filter2D RGB", "expansion=10 cpu=1 xyscaling=1");// RGB10x dilation
-			
+			IJ.run(impgradientMask,"Maximum...", "radius=10");
 			IJ.run(imp10pxRGBmask,"Maximum...", "radius=10");
 			
 			String lastcha=gradientDIR.substring(gradientDIR.length()-1,gradientDIR.length());
@@ -2456,7 +2462,7 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 					}
 				}
 				
-				IJ.run(Stack2IMP,"Max Filter2D", "expansion=10 cpu=15 xyscaling=1");
+				IJ.run(Stack2IMP,"Maximum...", "radius=10");
 				
 				ic = new ImageConverter(Stack2IMP);
 				ic.convertToGray16();
