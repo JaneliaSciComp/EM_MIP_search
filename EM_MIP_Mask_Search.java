@@ -41,9 +41,9 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 	int pix1=0, CheckPost,UniqueLineName=0,IsPosi,threadNumE=0,FLpositive=0;
 	int pix3=0,Check=0,arrayPosition=0,dupdel=1,FinalAdded=1,enddup=0;
 	ImagePlus newimp, newimpOri;
-	String linename,LineNo, LineNo2,preLineNo="A",FullName,LineName,arrayName,PostName,negativeradius="";
+	String linename,LineNo, LineNo2,preLineNo="A",FullName,LineName,arrayName,PostName;
 	String args [] = new String[10],PreFullLineName,ScorePre,TopShortLinename;
-	
+	String negativeradius="10";
 	ExecutorService m_executor;
 	
 	boolean DUPlogonE;
@@ -410,7 +410,7 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 		Prefs.set("maxnumber.int",maxnumber);
 		Prefs.set("shownormal.boolean",shownormal);
 		Prefs.set("showFlip.String",showFlip);
-		Prefs.set("negativeradius,String",negativeradius);
+		Prefs.set("negativeradius.String",negativeradius);
 		
 		
 		double pixfludub=pixfluE/100;
