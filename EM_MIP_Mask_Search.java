@@ -2177,14 +2177,19 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 		final ImageStack originalresultstack=impstack.getStack();
 		long startT=System.currentTimeMillis();
 		if(stackslicenum>1){
+			
+			ImagePlus impgradientMask = impmask.duplicate();
+			ImagePlus imp10pxRGBmask = impmask.duplicate();
+			
+			info= impgradientMask.getDimensions();
+			int WW = info[0];
+			int HH = info[1];
 			//fill name
 			for(int iz=1; iz<=stackslicenum; iz++){
 				ImageProcessor fillip=originalresultstack.getProcessor(iz);
 				
-				int pix0=fillip.get(0,0);
-				
-				for(int ix=0; ix<250; ix++){
-					for(int iy=0; iy<40; iy++){
+				for(int ix=0; ix<330; ix++){
+					for(int iy=0; iy<100; iy++){
 						
 						int pixf=fillip.getPixel(ix,iy);
 						
@@ -2192,8 +2197,15 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 						int green1 = (pixf>>>8) & 0xff;
 						int blue1 = pixf & 0xff;
 						
-						if(red1>0 && green1>0 && blue1>0)
-						fillip.set(ix,iy,pix0);
+						if(red1==green1 && green1==blue1)
+						fillip.set(ix,iy,-16777216);
+					}
+				}
+				
+				for(int ix=950; ix<WW; ix++){
+					for(int iy=0; iy<85; iy++){
+						
+						fillip.set(ix,iy,-16777216);
 					}
 				}
 			}
@@ -2205,8 +2217,7 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 			IJ.log("maskname; "+maskname);
 			final int test=1;
 			
-			ImagePlus impgradientMask = impmask.duplicate();
-			ImagePlus imp10pxRGBmask = impmask.duplicate();
+
 			
 			
 			
@@ -2216,9 +2227,7 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 			ImageProcessor EightIMG = impgradientMask.getProcessor();
 			ImageProcessor IP10pxRGBmask = imp10pxRGBmask.getProcessor();
 			
-			info= impgradientMask.getDimensions();
-			int WW = info[0];
-			int HH = info[1];
+	
 			final int sumpx= WW*HH;
 			for(int ipix=0; ipix<sumpx; ipix++){// 255 binary mask creation
 				if(EightIMG.get(ipix)>ThresmEf){
@@ -2251,8 +2260,8 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 			//						IJ.log("OSTYPE; "+OSTYPE);
 			
 			//	if(test==1){
-			//		imp10pxRGBmask.show();
-			//		return imp10pxRGBmask;
+			//	impgradientMask.show();
+			//	return impgradientMask;
 			//	}
 			
 			String gradientDIRopen=gradientDIR;
@@ -2361,7 +2370,7 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 			final ImagePlus impRGBMaskFlipfinal = RGBMaskFlipIMP;
 			final ImageProcessor IPflip10pxRGBmaskFinal = IPflip10pxRGBmask;
 			final ImageProcessor ipgradientFlipMaskFinal=ipgradientFlipMask;
-			impgradientMask.hide();
+	//		impgradientMask.hide();
 			
 			/// impgradientMask （フリップ）と EightIMG に z-distance の negative value を加える
 			
@@ -2598,21 +2607,22 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 									
 								}// multiply slice and gradient mask
 								
-								//	if(test==1){
-								//		SLICEtifimpFlip.show();
-								//			return;
-								//	}
+						//			if(test==1){
+						//				SLICEtifimpFlip.show();
+						//					return;
+						//			}
 								
-								//SLICEtifip = deleteMatchZandCreateZnegativeScoreIMG (SLICEtifip,IPOriStackResult,IPflip10pxRGBmaskFinal,sumpx);
 								SLICEtifimpFlip = deleteMatchZandCreateZnegativeScoreIMG (SLICEtifimpFlip,impOriStackResult,impRGBMaskFlipfinal,sumpx);
+								
+						//		if(test==1 ){//&& isli==18
+						//			SLICEtifimpFlip.show();
+						//			return;
+						//		}
 								
 								MaskToSampleFlip=sumPXmeasure(SLICEtifimpFlip);
 								//		IJ.log("MaskToSampleFlip; "+MaskToSampleFlip);
 								
-								//		if(MaskToSampleFlip==0){
-								//			IJ.log("SLICEtifimpFlip is 0");
-								//			return SLICEtifimpFlip;
-								//		}
+								
 								
 								SLICEtifimpFlip.unlock();
 								SLICEtifimpFlip.hide();
