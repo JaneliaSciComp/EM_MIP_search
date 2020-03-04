@@ -228,7 +228,7 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 		if(labelmethodE>1)
 		labelmethodE=1;
 		
-		GenericDialog gd = new GenericDialog("ColorDepthMIP_EM_Mask search");
+		GenericDialog gd = new GenericDialog("EM_MIP_Mask search");
 		gd.addChoice("Mask", titles, titles[MaskE]); //MaskE
 		gd.addSlider("1.Threshold for mask", 0, 255, ThresmE);
 		gd.setInsets(0, 340, 0);
@@ -2711,7 +2711,6 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 							}
 							
 							impSLICE2.unlock();
-							impSLICE2.hide();
 							impSLICE2.close();
 							long SampleToMaskflip;
 							long normalval=(SampleToMask+MaskToSample)/2;
@@ -2765,7 +2764,6 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 							areaarray[isli-1]=realval;
 							
 							impgradient.unlock();
-							//		impgradient.hide();
 							impgradient.close();
 							
 							int winindexF = OSTYPE.indexOf("windows");
@@ -3313,6 +3311,9 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 			
 			
 		}//	for(int i=1; i<sumpx; i++){
+		
+		ipmf.unlock();
+		ipmf.close();
 		
 		return sumvalue;
 	}
