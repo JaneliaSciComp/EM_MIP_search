@@ -2307,6 +2307,9 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 			ImagePlus RGBMaskFlipIMP = imp10pxRGBmask.duplicate();
 			ImageProcessor IPflip10pxRGBmask=RGBMaskFlipIMP.getProcessor();
 			
+			EightIMG = DeleteOutSideMask(EightIMG,iphemiMIP); // delete out side of emptyhemibrain region
+			IP10pxRGBmask = DeleteOutSideMask(IP10pxRGBmask,iphemiMIP); // RGBmask; delete out side of EM mask
+			
 			if(mirror_maskEF){
 				ipgradientFlipMask.flipHorizontal();
 				IPflip10pxRGBmask.flipHorizontal();// flipped RGBmask
@@ -2316,10 +2319,7 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 				//			return impgradientMask; 
 				//		}
 				
-				EightIMG = DeleteOutSideMask(EightIMG,iphemiMIP); // delete out side of emptyhemibrain region
 				ipgradientFlipMask = DeleteOutSideMask(ipgradientFlipMask,iphemiMIP); // Flipped mask; delete out side of emptyhemibrain region
-				
-				IP10pxRGBmask = DeleteOutSideMask(IP10pxRGBmask,iphemiMIP); // RGBmask; delete out side of EM mask
 				IPflip10pxRGBmask = DeleteOutSideMask(IPflip10pxRGBmask,iphemiMIP); // flipped RGBmask; delete out side of EM mask
 				
 			//	if(test==1){
