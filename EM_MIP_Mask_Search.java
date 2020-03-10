@@ -43,7 +43,7 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 	ImagePlus newimp, newimpOri;
 	String linename,LineNo, LineNo2,preLineNo="A",FullName,LineName,arrayName,PostName;
 	String args [] = new String[10],PreFullLineName,ScorePre,TopShortLinename;
-	String negativeradius="10";
+	String negativeradiusEM="10";
 	ExecutorService m_executor;
 	
 	boolean DUPlogonE;
@@ -173,7 +173,7 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 		boolean shownormal=(boolean)Prefs.get("shownormal.boolean",false);
 		String showFlip=(String)Prefs.get("showFlip.String","None");
 		boolean maskiscom=(boolean)Prefs.get("maskiscom.boolean",false);
-		negativeradius = (String)Prefs.get("negativeradius.String","10");
+		negativeradiusEM = (String)Prefs.get("negativeradiusEM.String","10");
 		
 		if(datafileE >= imageno){
 			int singleslice=0; int Maxsingleslice=0; int MaxStack=0;
@@ -260,7 +260,7 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 		
 		String []	com2 = {"10","5"};//"ShowComissure matching (Bothside commissure)"
 		gd.setInsets(0, 180, 0);
-		gd.addRadioButtonGroup("Negative score region radius: px ", com2, 1, 2, negativeradius);
+		gd.addRadioButtonGroup("Negative score region radius: px ", com2, 1, 2, negativeradiusEM);
 		
 		gd.setInsets(20, 0, 0);
 		gd.addNumericField("Positive PX % Threshold: EM matching is 0.5-1.5%", pixThresE, 4);
@@ -318,7 +318,7 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 		datafileE = gd.getNextChoiceIndex(); //Color MIP
 		//	ThresE=(int)gd.getNextNumber();
 		
-		negativeradius = (String)gd.getNextRadioButton();
+		negativeradiusEM = (String)gd.getNextRadioButton();
 		pixThresE=(double)gd.getNextNumber();
 		pixfluE=(double)gd.getNextNumber();
 		gradientDIR_=gd.getNextString();
@@ -410,7 +410,7 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 		Prefs.set("maxnumber.int",maxnumber);
 		Prefs.set("shownormal.boolean",shownormal);
 		Prefs.set("showFlip.String",showFlip);
-		Prefs.set("negativeradius.String",negativeradius);
+		Prefs.set("negativeradiusEM.String",negativeradiusEM);
 		
 		
 		double pixfludub=pixfluE/100;
@@ -2252,8 +2252,8 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 			//		}
 		
 			
-			IJ.run(impgradientMask,"Maximum...", "radius="+negativeradius+"");
-			IJ.run(imp10pxRGBmask,"Maximum...", "radius="+negativeradius+"");
+			IJ.run(impgradientMask,"Maximum...", "radius="+negativeradiusEM+"");
+			IJ.run(imp10pxRGBmask,"Maximum...", "radius="+negativeradiusEM+"");
 			
 			String lastcha=gradientDIR.substring(gradientDIR.length()-1,gradientDIR.length());
 			final String OSTYPE = System.getProperty("os.name").toLowerCase();
@@ -2307,10 +2307,10 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 			ImagePlus RGBMaskFlipIMP = imp10pxRGBmask.duplicate();
 			ImageProcessor IPflip10pxRGBmask=RGBMaskFlipIMP.getProcessor();
 			
-			EightIMG = DeleteOutSideMask(EightIMG,iphemiMIP); // delete out side of emptyhemibrain region
-			IP10pxRGBmask = DeleteOutSideMask(IP10pxRGBmask,iphemiMIP); // RGBmask; delete out side of EM mask
-			
 			if(mirror_maskEF){
+		//		ipgradientFlipMask = DeleteOutSideMask(ipgradientFlipMask,iphemiMIP); // Flipped mask; delete out side of emptyhemibrain region
+		//		IPflip10pxRGBmask = DeleteOutSideMask(IPflip10pxRGBmask,iphemiMIP); // flipped RGBmask; delete out side of EM mask
+				
 				ipgradientFlipMask.flipHorizontal();
 				IPflip10pxRGBmask.flipHorizontal();// flipped RGBmask
 				//		if(test==1){
@@ -2319,7 +2319,10 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 				//			return impgradientMask; 
 				//		}
 				
+				EightIMG = DeleteOutSideMask(EightIMG,iphemiMIP); // delete out side of emptyhemibrain region
 				ipgradientFlipMask = DeleteOutSideMask(ipgradientFlipMask,iphemiMIP); // Flipped mask; delete out side of emptyhemibrain region
+				
+				IP10pxRGBmask = DeleteOutSideMask(IP10pxRGBmask,iphemiMIP); // RGBmask; delete out side of EM mask
 				IPflip10pxRGBmask = DeleteOutSideMask(IPflip10pxRGBmask,iphemiMIP); // flipped RGBmask; delete out side of EM mask
 				
 			//	if(test==1){
@@ -2382,9 +2385,11 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 			
 			
 			Value1maskIMP = setsignal1(Value1maskIMP,sumpx);
-			final ImagePlus Value1maskIMPfinal = Value1maskIMP;
+			ImageProcessor Value1maskip = Value1maskIMP.getProcessor();
+			Value1maskip = DeleteOutSideMask(Value1maskip,iphemiMIP); // delete out side of emptyhemibrain region
 			
-			final ImageProcessor ipValue1mask =Value1maskIMP.getProcessor();
+			final ImagePlus Value1maskIMPfinal = Value1maskIMP;
+			final ImageProcessor ipValue1mask =Value1maskip;
 			//	if(test==1){
 			//		Value1maskIMP.show();
 			//		return Value1maskIMP; 
@@ -2394,6 +2399,7 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 			ImageProcessor ipFlipValue1mask =impFlipValue1mask.getProcessor();
 			
 			if(mirror_maskEF){
+				ipFlipValue1mask = DeleteOutSideMask(ipFlipValue1mask,iphemiMIP); // delete out side of emptyhemibrain region
 				ipFlipValue1mask.flipHorizontal();
 				ipFlipValue1mask = DeleteOutSideMask(ipFlipValue1mask,iphemiMIP); // delete out side of emptyhemibrain region
 				
@@ -2471,7 +2477,7 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 					}
 				}
 				
-				IJ.run(Stack2IMP,"Maximum...", "radius="+negativeradius+"");
+				IJ.run(Stack2IMP,"Maximum...", "radius="+negativeradiusEM+"");
 				
 				ic = new ImageConverter(Stack2IMP);
 				ic.convertToGray16();
