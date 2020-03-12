@@ -2159,7 +2159,7 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 		
 	}//public class ColorMIPMaskCompare {
 	
-	ImagePlus CDM_area_measure (ImagePlus impstack, ImagePlus impmask, final String gradientDIR, final boolean rungradientonthefly, final int ThresmEf, final int maxnumberF,final boolean mirror_maskEF, String showFlipF, final int threadNumEF, int FLpositiveF, ImageStack st3F, int slicenumberF){
+	ImagePlus CDM_area_measure (ImagePlus impstack, final ImagePlus impmask, final String gradientDIR, final boolean rungradientonthefly, final int ThresmEf, final int maxnumberF,final boolean mirror_maskEF, String showFlipF, final int threadNumEF, int FLpositiveF, ImageStack st3F, int slicenumberF){
 		
 		int Threval=0; int stackslicenum=0;
 		
@@ -2529,6 +2529,7 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 			
 			final ImageProcessor IP10pxRGBmaskfinal = IP10pxRGBmask; 
 			final ImagePlus impgradientMaskFinal = impgradientMask; 
+			final String negativeradiusEMfin=negativeradiusEM;
 			
 			for (int ithread = 0; ithread < threads.length; ithread++) {
 				// Concurrently run in as many threads as CPUs
@@ -2579,12 +2580,14 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 							
 							ImagePlus impOriStackResult = new ImagePlus ("impOriStackResult.tif",originalresultstack.getProcessor(isli));// original stack slice
 							
+						//	if(test==1 && isli==11){
+						//		SLICEtifimp.show();
+						//		return;
+						//	}
+							
+							
 							SLICEtifimp = deleteMatchZandCreateZnegativeScoreIMG (SLICEtifimp,impOriStackResult,imp10pxRGBmaskfinal,sumpx);
 							
-							//		if(test==1 && isli==18){
-							//			SLICEtifimp.show();
-							//			return;
-							//		}
 							
 							long MaskToSample=sumPXmeasure(SLICEtifimp);
 							
@@ -2643,6 +2646,10 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 							ImagePlus impgradient = new ImagePlus (titleslice,ipSLICE2);
 							/////////////end
 							
+							ImagePlus RGBstack10px = impgradient.duplicate();
+							IJ.run(RGBstack10px,"Maximum...", "radius="+negativeradiusEMfin+"");
+							
+							
 							if(rungradientonthefly==false){
 								
 								int undeindex=namearray[isli-1].indexOf("_");
@@ -2651,8 +2658,6 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 								if(filename.endsWith(".tif"))
 								filename=filename.replace(".tif",".png");
 								//		IJ.log("gradientDIR; "+gradientDIR+";   length; "+gradientDIR.length()+"   lastcha; "+lastcha+"   filename; "+filename);
-								
-								
 								File f = new File(gradientDIR+filename);
 								if (!f.exists()){
 									IJ.log("The file cannot open; "+gradientDIR+filename);
@@ -2667,12 +2672,15 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 							
 							ImagePlus impSLICE2 = impgradient.duplicate();
 							
+							
+							ic2 = new ImageConverter(impSLICE2);
+							ic2.convertToGray16();
 							//		if(test==1  && isli==2){
 							//			impSLICE2.show();// 
 							//			return; 
 							//		}
-							
 							ImageProcessor ipforfunc2 = impSLICE2.getProcessor();
+						
 							
 							//		if(test==1  && isli==1){
 							//			Value1maskIMPfinal.show();
@@ -2687,17 +2695,18 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 								ipforfunc2.set(ivx2, pix1*pix2);
 							}// multiply slice and gradient mask
 							
-							//		if(test==1  && isli==1){
+					//		if(test==1  && isli==11){
+					//			impSLICE2.show();// 
+					//			return; 
+					//		}
 							
-							//			impSLICE2.show();// 
-							//			return; 
-							//		}
+							ImagePlus originalmaskimpDup = impmask.duplicate();
 							
 							//ipforfunc2 = deleteMatchZandCreateZnegativeScoreIMG (ipforfunc2,IPOriStackResult,IP10pxRGBmaskfinal,sumpx);
-							impSLICE2 = deleteMatchZandCreateZnegativeScoreIMG (impSLICE2,impOriStackResult,imp10pxRGBmaskfinal,sumpx);
+							impSLICE2 = deleteMatchZandCreateZnegativeScoreIMG (impSLICE2,originalmaskimpDup,RGBstack10px,sumpx);
 							
 							
-							//		if(test==1  && isli==2){
+							//		if(test==1  && isli==11){
 							//			impSLICE2.show();// 
 							//			return; 
 							//		}
@@ -2716,6 +2725,9 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 								return;
 							}
 							
+							originalmaskimpDup.unlock();
+							originalmaskimpDup.close();
+							
 							impSLICE2.unlock();
 							impSLICE2.close();
 							long SampleToMaskflip;
@@ -2727,13 +2739,17 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 								//// flip X//////////////////////////////////////
 								ImagePlus impSLICE2F = impgradient.duplicate();//single slice from em bodyID hit
 								
+								ImageProcessor RGBstack10pxIP = RGBstack10px.getProcessor(); 
+								
+								RGBstack10pxIP.flipHorizontal();// flipped RGBmask
+								
 								//	IJ.run(impSLICE2F,"Flip Horizontally","");// Flip gradient opened EM mask
 								
-								//			if(test==1){
-								//				impgradient.show();
+								if(test==1 && isli==11){
+									RGBstack10px.show();
 								//				impSLICE2F.show();
-								//				return impgradient;
-								//			}
+									return;
+								}
 								
 								ImageProcessor ipforfunc21 = impSLICE2F.getProcessor();
 								
@@ -2745,14 +2761,16 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 									ipforfunc21.set(ivx2, pix1*pix2);
 								}// multiply slice and gradient mask
 								
+								impSLICE2F = deleteMatchZandCreateZnegativeScoreIMG (impSLICE2F,originalmaskimpDup,RGBstack10px,sumpx);
+								
 								SampleToMaskflip=sumPXmeasure(impSLICE2F);
 								
 								//		IJ.log("SampleToMaskflip; "+SampleToMaskflip);
-								//		if(test==1){
+							//			if(test==1 && isli==11){
 								//			impFlipValue1mask.show();
-								//			impSLICE2F.show();
-								//			return impSLICE2F;
-								//		}
+							//				impSLICE2F.show();
+							//				return;
+							//			}
 								
 								impSLICE2F.unlock();
 								impSLICE2F.close();
@@ -2766,6 +2784,10 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 									fliparray[isli-1]=1;
 								}
 							}//	if(flip==1){
+							
+							RGBstack10px.unlock();
+							RGBstack10px.close();
+							
 							
 							areaarray[isli-1]=realval;
 							
