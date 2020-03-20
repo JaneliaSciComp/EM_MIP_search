@@ -18,6 +18,13 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicLong;
 
+import javax.imageio.ImageIO; 
+import javax.imageio.ImageReader; 
+import javax.imageio.stream.ImageInputStream; 
+import javax.imageio.metadata.IIOMetadata;
+import javax.imageio.metadata.IIOMetadataNode;
+import javax.imageio.ImageTypeSpecifier;
+
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -52,19 +59,99 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 		String m_name;
 		int m_sid;
 		long m_offset;
+		int m_strip;
 		byte[] m_pixels;
 		byte[] m_colocs;
 		ImageProcessor m_iporg;
 		ImageProcessor m_ipcol;
-		SearchResult(String name, int sid, long offset, byte[] pxs, byte[] coloc, ImageProcessor iporg, ImageProcessor ipcol){
+		SearchResult(String name, int sid, long offset, int strip, byte[] pxs, byte[] coloc, ImageProcessor iporg, ImageProcessor ipcol){
 			m_name = name;
 			m_sid = sid;
 			m_offset = offset;
+			m_strip = strip;
 			m_pixels = pxs;
 			m_colocs = coloc;
 			m_iporg = iporg;
 			m_ipcol = ipcol;
 		}
+	}
+	
+	class ByteVector {
+		public byte[] data;
+		private int size;
+		
+		public ByteVector() {
+			data = new byte[10];
+			size = 0;
+		}
+		
+		public ByteVector(int initialSize) {
+			data = new byte[initialSize];
+			size = 0;
+		}
+		
+		public ByteVector(byte[] byteBuffer) {
+			data = byteBuffer;
+			size = 0;
+		}
+		
+		public void add(byte x) {
+			if (size>=data.length) {
+				doubleCapacity();
+				add(x);
+			} else
+			data[size++] = x;
+		}
+		
+		public int size() {
+			return size;
+		}
+		
+		public void add(byte[] array) {
+			int length = array.length;
+			while (data.length-size<length)
+			doubleCapacity();
+			System.arraycopy(array, 0, data, size, length);
+			size += length;
+		}
+		
+		void doubleCapacity() {
+			byte[] tmp = new byte[data.length*2 + 1];
+			System.arraycopy(data, 0, tmp, 0, data.length);
+			data = tmp;
+		}
+		
+		public void clear() {
+			size = 0;
+		}
+		
+		public byte[] toByteArray() {
+			byte[] bytes = new byte[size];
+			System.arraycopy(data, 0, bytes, 0, size);
+			return bytes;
+		}
+	}
+	
+	public int packBitsUncompress(byte[] input, byte[] output, int offset, int expected) {
+		if (expected==0) expected = Integer.MAX_VALUE;
+		int index = 0;
+		int pos = offset;
+		while (pos < expected && pos < output.length && index < input.length) {
+			byte n = input[index++];
+			if (n>=0) { // 0 <= n <= 127
+				byte[] b = new byte[n+1];
+				for (int i=0; i<n+1; i++)
+				b[i] = input[index++];
+				System.arraycopy(b, 0, output, pos, b.length);
+				pos += (int)b.length;
+				b = null;
+			} else if (n != -128) { // -127 <= n <= -1
+				int len = -n + 1;
+				byte inp = input[index++];
+				for (int i=0; i<len; i++) output[pos++] = inp;
+			}
+		}
+		return pos;
 	}
 	
 	public int setup(String arg, ImagePlus imp)
@@ -118,7 +205,10 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 	public void run(ImageProcessor ip){
 		
 		int wList [] = WindowManager.getIDList();
-		
+		if (wList==null || wList.length<2) {
+			IJ.showMessage("There should be at least two windows open");
+			return;
+		}
 		int imageno = 0; int SingleSliceMIPnum=0; int MultiSliceStack=0;
 		String titles [] = new String[wList.length];
 		int slices [] = new int[wList.length];
@@ -472,7 +562,43 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 		long start, end;
 		start = System.currentTimeMillis();
 		
-		//IJ.log(" masksize;"+String.valueOf(masksize));
+		IJ.log("  st3.isVirtual(); "+st3.isVirtual());
+		String fileformat="";
+		if(st3.isVirtual()){
+			VirtualStack vst = (VirtualStack)st3;
+			String datapath = null;
+			if (vst.getDirectory() == null) {
+				FileInfo fi = idata.getOriginalFileInfo();
+				if (fi.directory.length()>0 && !(fi.directory.endsWith(Prefs.separator)||fi.directory.endsWith("/")))
+				fi.directory += Prefs.separator;
+				datapath = fi.directory + fi.fileName;
+			} else {
+				String dirtmp = vst.getDirectory();
+				if (dirtmp.length()>0 && !(dirtmp.endsWith(Prefs.separator)||dirtmp.endsWith("/")))
+				dirtmp += Prefs.separator;
+				String directory = dirtmp;
+				datapath = directory + vst.getFileName(3);
+			}
+			IJ.log("datapath; "+datapath);
+			
+			FileInfo fi0 = idata.getOriginalFileInfo();
+			
+			if(fi0.compression==5)
+			fileformat="tif PackBits";
+			
+			if(fi0.compression==1){
+				int tifextindex=datapath.lastIndexOf(".tif");
+				int pngextindex=datapath.lastIndexOf(".png");
+				
+				if(pngextindex!=-1 && tifextindex==-1){
+					fileformat="png";
+				}else{
+					fileformat="tif none";
+				}
+			}
+			
+			IJ.log("compressio; "+fileformat);
+		}
 		
 		ArrayList<String> srlabels = new ArrayList<String>();
 		ArrayList<String> finallbs = new ArrayList<String>();
@@ -485,11 +611,14 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 		final boolean flogNan = logNanE;
 		final int fNumberSTint = NumberSTintE;
 		final int flabelmethod = labelmethodE;
+		final boolean isPackbits = fileformat.equals("tif PackBits");
+		if(fileformat.equals("tif none") || fileformat.equals("tif PackBits")){
 		if (st3.isVirtual()) {
 			final VirtualStack vst = (VirtualStack)st3;
 			if (vst.getDirectory() == null) {
-				IJ.log("Virtual Stack (stack)");
-				
+					IJ.log("Virtual Stack (stack)");
+					
+					if (fileformat.equals("tif none")) {
 				final FileInfo fi = idata.getOriginalFileInfo();
 				if (fi.directory.length()>0 && !(fi.directory.endsWith(Prefs.separator)||fi.directory.endsWith("/")))
 				fi.directory += Prefs.separator;
@@ -507,7 +636,9 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 								try {
 									f = new RandomAccessFile(datapath, "r");
 									for (int slice = fslicenum/fthreadnum*ftid+1, count = 0; slice <= fslicenum && count < f_th_snum; slice++, count++) {
-										byte [] impxs = new byte[(int)size];
+												if( IJ.escapePressed() )
+												break;
+												byte [] impxs = new byte[(int)size];
 										byte [] colocs = null;
 										if (fShowCo) colocs = new byte[(int)size];
 										
@@ -552,7 +683,7 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 												String posiST=getZeroFilledNumString(posi, 4);
 												title = (flabelmethod==0 || flabelmethod==1) ? posiST+"_"+linename : linename+"_"+posiST;
 											}
-											out.add(new SearchResult(title, slice, loffset, impxs, colocs, null, null));
+													out.add(new SearchResult(title, slice, loffset, 0, impxs, colocs, null, null));
 											if (ftid == 0)
 											IJ.showStatus("Number of Hits (estimated): "+out.size()*fthreadnum);
 										}
@@ -574,14 +705,144 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 						for (SearchResult r : future.get()) {
 							srlabels.add(r.m_name);
 							srdict.put(r.m_name, r);
-							
+									int FLindex = r.m_name.lastIndexOf("_FL");
+									
+									//IJ.log("r.m_name; "+r.m_name);
+									
+									if(FLindex!=-1)
+									FLpositive=FLpositive+1;
+									
 							posislice=posislice+1;
 						}
 					}
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
-				
+					} else if (fileformat.equals("tif PackBits")) {
+						final FileInfo fi = idata.getOriginalFileInfo();
+						if (fi.directory.length()>0 && !(fi.directory.endsWith(Prefs.separator)||fi.directory.endsWith("/")))
+						fi.directory += Prefs.separator;
+						final String datapath = fi.directory + fi.fileName;
+						final long size = fi.width*fi.height*fi.getBytesPerPixel();
+						
+						try {
+							
+							final TiffDecoder tfd = new TiffDecoder(fi.directory, fi.fileName);
+							final FileInfo[] fi_list = tfd.getTiffInfo();
+							IJ.log(fi_list[0].toString());
+							
+							final List<Callable<ArrayList<SearchResult>>> tasks = new ArrayList<Callable<ArrayList<SearchResult>>>();
+							for (int ithread = 0; ithread < threadNumE; ithread++) {
+								final int ftid = ithread;
+								final int f_th_snum = fslicenum/fthreadnum;
+								tasks.add(new Callable<ArrayList<SearchResult>>() {
+										public ArrayList<SearchResult> call() {
+											ArrayList<SearchResult> out = new ArrayList<SearchResult>();
+											RandomAccessFile f = null;
+											try {
+												f = new RandomAccessFile(datapath, "r");
+												for (int slice = fslicenum/fthreadnum*ftid+1, count = 0; slice <= fslicenum && count < f_th_snum; slice++, count++) {
+													if( IJ.escapePressed() )
+													break;	
+													byte [] impxs = new byte[(int)size];
+													byte [] colocs = null;
+													if (fShowCo) colocs = new byte[(int)size];
+													
+													if (ftid == 0)
+													IJ.showProgress((double)slice/(double)f_th_snum);
+													
+													long fioffset = fi_list[slice].getOffset();
+													long loffset = 0;
+													int ioffset = 0;
+													int stripid = 0;
+													for (int i=0; i<fi_list[slice].stripOffsets.length; i++) {
+														f.seek(fioffset + (long)fi_list[slice].stripOffsets[i]);
+														byte[] byteArray = new byte[fi_list[slice].stripLengths[i]];
+														int read = 0, left = byteArray.length;
+														while (left > 0) {
+															int r = f.read(byteArray, read, left);
+															if (r == -1) break;
+															read += r;
+															left -= r;
+														}
+														loffset = ioffset;
+														stripid = i;
+														ioffset = packBitsUncompress(byteArray, impxs, ioffset, maskpos_ed);
+														if (ioffset >= maskpos_ed) {
+															break;
+														}
+													}
+													
+													linename=st3.getSliceLabel(slice);
+													
+													ColorMIPMaskCompare.Output res = cc.runSearch(impxs, colocs);
+													
+													int posi = res.matchingPixNum;
+													double posipersent = res.matchingPct;
+													
+													if(posipersent<=pixThresdub){
+														if (flogon==true && flogNan==true)
+														IJ.log("NaN");
+													}else if(posipersent>pixThresdub){
+														loffset = fi.getOffset() + (slice-1)*(size+fi.gapBetweenImages);
+														
+														double posipersent3=posipersent*100;
+														double pixThresdub3=pixThresdub*100;
+														
+														posipersent3 = posipersent3*100;
+														posipersent3 = Math.round(posipersent3);
+														double posipersent2 = posipersent3 /100;
+														
+														pixThresdub3 = pixThresdub3*100;
+														pixThresdub3 = Math.round(pixThresdub3);
+														
+														if(flogon==true && flogNan==true)// sort by name
+														IJ.log("Positive linename; 	"+linename+" 	"+String.valueOf(posipersent2));
+														
+														String title="";
+														if(fNumberSTint==0){
+															String numstr = getZeroFilledNumString(posipersent2, 3, 2);
+															title = (flabelmethod==0 || flabelmethod==1) ? numstr+"_"+linename : linename+"_"+numstr;
+														}
+														else if(fNumberSTint==1){
+															String posiST=getZeroFilledNumString(posi, 4);
+															title = (flabelmethod==0 || flabelmethod==1) ? posiST+"_"+linename : linename+"_"+posiST;
+														}
+														out.add(new SearchResult(title, slice, loffset, stripid, impxs, colocs, null, null));
+														if (ftid == 0)
+														IJ.showStatus("Number of Hits (estimated): "+out.size()*fthreadnum);
+													}
+												}
+												f.close();
+											} catch (IOException e) {
+												e.printStackTrace();
+											} finally {
+												try { if (f != null) f.close(); }
+												catch  (IOException e) { e.printStackTrace(); }
+											}
+											return out;
+										}
+								});
+							}
+							List<Future<ArrayList<SearchResult>>> taskResults = m_executor.invokeAll(tasks);
+							for (Future<ArrayList<SearchResult>> future : taskResults) {
+								for (SearchResult r : future.get()) {
+									srlabels.add(r.m_name);
+									srdict.put(r.m_name, r);
+									int FLindex = r.m_name.lastIndexOf("_FL");
+									
+									//IJ.log("r.m_name; "+r.m_name);
+									
+									if(FLindex!=-1)
+									FLpositive=FLpositive+1;
+									
+									posislice=posislice+1;
+								}
+							}
+						} catch (Exception e) {
+							e.printStackTrace();
+						}
+					}
 			} else {
 				
 				String dirtmp = vst.getDirectory();
@@ -591,14 +852,29 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 				final String directory = dirtmp;
 				final long size = width*height*3;
 				final List<Callable<ArrayList<SearchResult>>> tasks = new ArrayList<Callable<ArrayList<SearchResult>>>();
-				for (int ithread = 0; ithread < threadNumE; ithread++) {
+					
+					try {
+						String datapath = directory + vst.getFileName(1);
+						RandomAccessFile f = new RandomAccessFile(datapath, "r");
+						TiffDecoder tfd = new TiffDecoder(directory, vst.getFileName(1));
+						FileInfo[] fi_list = tfd.getTiffInfo();
+						IJ.log("NumberOfStripOffsets: "+fi_list[0].stripOffsets.length);
+						f.close();
+					} catch (IOException e) {
+						return;
+					}
+					
+					
+					for (int ithread = 0; ithread < threadNumE; ithread++) {
 					final int ftid = ithread;
 					final int f_th_snum = fslicenum/fthreadnum;
 					tasks.add(new Callable<ArrayList<SearchResult>>() {
 							public ArrayList<SearchResult> call() {
 								ArrayList<SearchResult> out = new ArrayList<SearchResult>();
 								for (int slice = fslicenum/fthreadnum*ftid+1, count = 0; slice <= fslicenum && count < f_th_snum; slice++, count++) {
-									byte [] impxs = new byte[(int)size];
+										if( IJ.escapePressed() )
+										break;
+										byte [] impxs = new byte[(int)size];
 									byte [] colocs = null;
 									if (fShowCo) colocs = new byte[(int)size];
 									String datapath = directory + vst.getFileName(slice);
@@ -607,22 +883,39 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 									IJ.showProgress((double)slice/(double)f_th_snum);
 									
 									try {
-										
-										if(IJ.escapePressed()){
-											IJ.log("esc canceled");
-											return out;
-										}
-										
-										RandomAccessFile f = new RandomAccessFile(datapath, "r");
 										TiffDecoder tfd = new TiffDecoder(directory, vst.getFileName(slice));
 										if (tfd == null) continue;
 										FileInfo[] fi_list = tfd.getTiffInfo();
-										if (fi_list == null) continue;
-										long loffset = fi_list[0].getOffset();
-										
+											if (fi_list == null) continue;
+											RandomAccessFile f = new RandomAccessFile(datapath, "r");
+											
+											long loffset = 0;
+											int stripid = 0;
+											if (!isPackbits) {
+												loffset = fi_list[0].getOffset();
 										f.seek(loffset+(long)maskpos_st);
 										f.read(impxs, maskpos_st, stripsize);
-										
+											} else {
+												int ioffset = 0;
+												for (int i=0; i<fi_list[0].stripOffsets.length; i++) {
+													f.seek(fi_list[0].stripOffsets[i]);
+													byte[] byteArray = new byte[fi_list[0].stripLengths[i]];
+													int read = 0, left = byteArray.length;
+													while (left > 0) {
+														int r = f.read(byteArray, read, left);
+														if (r == -1) break;
+														read += r;
+														left -= r;
+													}
+													loffset = ioffset;
+													stripid = i;
+													ioffset = packBitsUncompress(byteArray, impxs, ioffset, maskpos_ed);
+													if (ioffset >= maskpos_ed) {
+														break;
+													}
+												}
+											}
+											
 										String linename = st3.getSliceLabel(slice);
 										
 										ColorMIPMaskCompare.Output res = cc.runSearch(impxs, colocs);
@@ -655,13 +948,13 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 												String posiST=getZeroFilledNumString(posi, 4);
 												title = (flabelmethod==0 || flabelmethod==1) ? posiST+"_"+linename : linename+"_"+posiST;
 											}
-											out.add(new SearchResult(title, slice, loffset, impxs, colocs, null, null));
+												out.add(new SearchResult(title, slice, loffset, stripid, impxs, colocs, null, null));
 											if (ftid == 0)
 											IJ.showStatus("Number of Hits (estimated): "+out.size()*fthreadnum);
 										}
 										f.close();
-										//	System.gc();
-									} catch (IOException e) {
+										} catch (IOException e) {
+											e.printStackTrace();			
 										continue;
 									}
 								}
@@ -675,14 +968,14 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 						for (SearchResult r : future.get()) {
 							srlabels.add(r.m_name);
 							srdict.put(r.m_name, r);
-							
 							int FLindex = r.m_name.lastIndexOf("_FL");
 							
 							//			IJ.log("r.m_name; "+r.m_name);
 							
 							if(FLindex!=-1)
 							FLpositive=FLpositive+1;
-							
+								
+								
 							posislice=posislice+1;
 						}
 					}
@@ -690,8 +983,10 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 					e.printStackTrace();
 				}
 			}
-			
+				
+			}
 		} else {// if not virtual stack
+			IJ.log("getProcessor run");		
 			final List<Callable<ArrayList<SearchResult>>> tasks = new ArrayList<Callable<ArrayList<SearchResult>>>();
 			for (int ithread = 0; ithread < threadNumE; ithread++) {
 				final int ftid = ithread;
@@ -700,6 +995,8 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 						public ArrayList<SearchResult> call() {
 							ArrayList<SearchResult> out = new ArrayList<SearchResult>();
 							for (int slice = fslicenum/fthreadnum*ftid+1, count = 0; slice <= fslicenum && count < f_th_snum; slice++, count++) {
+								if( IJ.escapePressed() )
+								break;
 								if (ftid == 0)
 								IJ.showProgress((double)slice/(double)f_th_snum);
 								
@@ -740,7 +1037,7 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 										String posiST=getZeroFilledNumString(posi, 4);
 										title = (flabelmethod==0 || flabelmethod==1) ? posiST+"_"+linename : linename+"_"+posiST;
 									}
-									out.add(new SearchResult(title, slice, 0L, null, null, ip3, ipnew));
+									out.add(new SearchResult(title, slice, 0L, 0, null, null, ip3, ipnew));
 									if (ftid == 0)
 									IJ.showStatus("Number of Hits (estimated): "+out.size()*fthreadnum);
 								}
@@ -772,8 +1069,11 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 			}
 		}
 		
+		long mid= System.currentTimeMillis();
+		long gapmid=(mid-start)/1000;
+		
 		IJ.showStatus("Number of Hits: "+String.valueOf(posislice));
-		IJ.log(" positive slice No.;"+String.valueOf(posislice)+" FL positive; "+FLpositive);
+		IJ.log(" positive slice No.;"+String.valueOf(posislice)+" FL positive; "+FLpositive+"  sec; "+gapmid);
 		
 		int PositiveSlices=posislice;
 		
@@ -794,14 +1094,15 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 				linenameTmpo = srlabels.get(CreateLineArray);
 				
 				int GMRPosi=(linenameTmpo.indexOf("GMR"));
-				int RPosi=(linenameTmpo.indexOf("R"));
+				int RPosi=(linenameTmpo.indexOf("R_"));
 				
 				int JRCPosi=(linenameTmpo.indexOf("JRC_"));
 				int BJDPosi=(linenameTmpo.indexOf("BJD"));
 				int DotPosi=(linenameTmpo.indexOf("."));
 				int VTPosi=(linenameTmpo.indexOf("VT"));
+				int SSPosi=(linenameTmpo.indexOf("SS"));
 				
-				if(GMRPosi==-1 && RPosi==-1 && JRCPosi==-1 && BJDPosi==-1 && VTPosi==-1)
+				if(GMRPosi==-1 && RPosi==-1 && JRCPosi==-1 && BJDPosi==-1 && VTPosi==-1 && SSPosi==-1)
 				duplineE=0;
 				
 				if(JRCPosi!=-1)
@@ -830,6 +1131,11 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 					int UnderS2=(linenameTmpo.indexOf("_", UnderS1+1 ));
 					
 					LineNo=linenameTmpo.substring(BJDPosi, UnderS2);// GMR_01A02
+				}else if(SSPosi!=-1){
+					int UnderS1=(linenameTmpo.indexOf("_", SSPosi+1));
+					int UnderS2=(linenameTmpo.indexOf("_", UnderS1+1 ));
+					
+					LineNo=linenameTmpo.substring(SSPosi, UnderS2);// GMR_01A02		
 				}else{
 					LineNo=linenameTmpo.substring(0, DotPosi);
 				}
@@ -2580,7 +2886,7 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 							
 							ImagePlus impOriStackResult = new ImagePlus ("impOriStackResult.tif",originalresultstack.getProcessor(isli));// original stack slice
 							
-						//	if(test==1 && isli==11){
+						//	if(test==1 && isli==6){
 						//		SLICEtifimp.show();
 						//		return;
 						//	}
@@ -2588,6 +2894,10 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 							
 							SLICEtifimp = deleteMatchZandCreateZnegativeScoreIMG (SLICEtifimp,impOriStackResult,imp10pxRGBmaskfinal,sumpx);
 							
+						//	if(test==1  && isli==6){
+						//		SLICEtifimp.show();// 
+						//		return; 
+						//	}
 							
 							long MaskToSample=sumPXmeasure(SLICEtifimp);
 							
@@ -2702,11 +3012,10 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 							
 							ImagePlus originalmaskimpDup = impmask.duplicate();
 							
-							//ipforfunc2 = deleteMatchZandCreateZnegativeScoreIMG (ipforfunc2,IPOriStackResult,IP10pxRGBmaskfinal,sumpx);
 							impSLICE2 = deleteMatchZandCreateZnegativeScoreIMG (impSLICE2,originalmaskimpDup,RGBstack10px,sumpx);
 							
 							
-							//		if(test==1  && isli==11){
+							//		if(test==1  && isli==6){
 							//			impSLICE2.show();// 
 							//			return; 
 							//		}
@@ -2745,11 +3054,11 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 								
 								//	IJ.run(impSLICE2F,"Flip Horizontally","");// Flip gradient opened EM mask
 								
-								if(test==1 && isli==11){
-									RGBstack10px.show();
+							//	if(test==1 && isli==11){
+							//		RGBstack10px.show();
 								//				impSLICE2F.show();
-									return;
-								}
+							//		return;
+							//	}
 								
 								ImageProcessor ipforfunc21 = impSLICE2F.getProcessor();
 								
@@ -2766,8 +3075,8 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 								SampleToMaskflip=sumPXmeasure(impSLICE2F);
 								
 								//		IJ.log("SampleToMaskflip; "+SampleToMaskflip);
-							//			if(test==1 && isli==11){
-								//			impFlipValue1mask.show();
+							//			if(test==1 && isli==6){
+							//				impFlipValue1mask.show();
 							//				impSLICE2F.show();
 							//				return;
 							//			}
