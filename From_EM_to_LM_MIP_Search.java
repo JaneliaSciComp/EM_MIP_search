@@ -342,7 +342,7 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 		gd.addCheckbox("2.Add mirror search", mirror_negmaskE);
 		
 		gd.setInsets(20, 0, 0);
-		gd.addChoice("EM_color_MIP Data for the search", titles, titles[datafileE]); //Data
+		gd.addChoice("LM_color_MIP Data for the search", titles, titles[datafileE]); //Data
 		
 		//gd.addNumericField("Threshold", slicenumber,0);
 		gd.addSlider("3.Threshold for data", 0, 255, ThresE);
@@ -973,7 +973,7 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 								
 								if(FLindex!=-1)
 								FLpositive=FLpositive+1;
-									
+								
 								
 								posislice=posislice+1;
 							}
@@ -1744,8 +1744,8 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 												ioffset = packBitsUncompress(byteArray, impxs, ioffset, 0);
 											}
 										}
-											
-											for (int i = 0, id = 0; i < size; i+=3,id++) {
+										
+										for (int i = 0, id = 0; i < size; i+=3,id++) {
 											int red2 = impxs[i] & 0xff;
 											int green2 = impxs[i+1] & 0xff;
 											int blue2 = impxs[i+2] & 0xff;
@@ -2502,8 +2502,8 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 		int flip=1;
 		
 		int [] info= impstack.getDimensions();
-		int WW2 = info[0];
-		int HH2 = info[1];
+		final int WW2 = info[0];
+		final int HH2 = info[1];
 		stackslicenum = info[3];//52
 		
 		final int sumpx= WW2*HH2;
@@ -2511,30 +2511,12 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 		ImagePlus Max60pxMask = impmask.duplicate();
 		IJ.run(Max60pxMask,"Maximum...", "radius=60"); 
 		
-		
+		final ImageProcessor ipMax60pxMask = Max60pxMask.getProcessor.
 		
 		final ImageStack originalresultstack=impstack.getStack();
 		long startT=System.currentTimeMillis();
 		if(stackslicenum>1){
-			//fill white name
-			//			for(int iz=1; iz<=stackslicenum; iz++){
-			//			ImageProcessor fillip=originalresultstack.getProcessor(iz);
-			
-			
-			//			for(int ix=0; ix<300; ix++){
-			//				for(int iy=0; iy<100; iy++){
-			
-			//					int pixf=fillip.getPixel(ix,iy);
-			
-			//					int red1 = (pixf>>>16) & 0xff;
-			//					int green1 = (pixf>>>8) & 0xff;
-			//					int blue1 = pixf & 0xff;
-			
-			//					if(red1>0 && green1>0 && blue1>0)
-			//					fillip.set(ix,iy,-16777216);
-			//				}
-			//			}
-			//		}//for(int iz=1; iz<=stackslicenum; iz++){
+		
 			
 			int [] fliparray = new int[stackslicenum];
 			long [] areaarray= new long[stackslicenum];
@@ -2686,6 +2668,29 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 							
 							impgradient0.unlock();
 							impgradient0.close();
+							
+							//fill white name
+							for(int ix=0; ix<300; ix++){
+								for(int iy=0; iy<100; iy++){
+									
+									int pixf=IP10pxRGBdata.getPixel(ix,iy);
+									
+									int red1 = (pixf>>>16) & 0xff;
+									int green1 = (pixf>>>8) & 0xff;
+									int blue1 = pixf & 0xff;
+									
+									if(red1>0 && green1>0 && blue1>0)
+									IP10pxRGBdata.set(ix,iy,-16777216);
+								}
+							}
+							for(int ix=950; ix<WW2; ix++){// deleting color scale
+								for(int iy=0; iy<85; iy++){
+									
+									fillip.set(ix,iy,-16777216);
+								}
+							}
+							
+							
 							
 							for(int ipix=0; ipix<sumpx; ipix++){// 255 binary mask creation
 								
@@ -2852,8 +2857,8 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 							RGBMaskFlipIMP.unlock();
 							RGBMaskFlipIMP.close();
 							
-					//		if(winindexF==-1)
-					//		System.gc();
+							if(winindexF==-1)
+							System.gc();
 							
 						}//2385 for(int isli=1; isli<=slices; isli++){
 				}};
