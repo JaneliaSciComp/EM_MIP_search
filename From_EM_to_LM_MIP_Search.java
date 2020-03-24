@@ -2511,7 +2511,7 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 		ImagePlus Max60pxMask = impmask.duplicate();
 		IJ.run(Max60pxMask,"Maximum...", "radius=60"); 
 		
-		final ImageProcessor ipMax60pxMask = Max60pxMask.getProcessor.
+		final ImageProcessor ipMax60pxMask = Max60pxMask.getProcessor();
 		
 		final ImageStack originalresultstack=impstack.getStack();
 		long startT=System.currentTimeMillis();
@@ -2666,6 +2666,14 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 							ImagePlus imp10pxRGBdata = impgradient0.duplicate();
 							ImageProcessor IP10pxRGBdata = imp10pxRGBdata.getProcessor();
 							
+							
+					//		int test=1;
+							
+					//		if(test==1  && isli==2){
+					//			impgradient0.show();// 
+					//						return; 
+					//					}
+							
 							impgradient0.unlock();
 							impgradient0.close();
 							
@@ -2686,7 +2694,7 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 							for(int ix=950; ix<WW2; ix++){// deleting color scale
 								for(int iy=0; iy<85; iy++){
 									
-									fillip.set(ix,iy,-16777216);
+									IP10pxRGBdata.set(ix,iy,-16777216);
 								}
 							}
 							
