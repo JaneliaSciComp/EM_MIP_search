@@ -2637,8 +2637,8 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 			
 			int PositiveStackSlicePre=stackslicenum;
 			
-			if(PositiveStackSlicePre>maxnumberF+FLpositiveF+50)
-			PositiveStackSlicePre=maxnumberF+FLpositiveF+50;
+			if(PositiveStackSlicePre>maxnumberF+FLpositiveF+maxnumberF)
+			PositiveStackSlicePre=maxnumberF+FLpositiveF+maxnumberF;
 			
 			final int PositiveStackSlice=PositiveStackSlicePre;
 			
@@ -2785,6 +2785,14 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 							filename=filename.replace(".tif",".png");
 							//		IJ.log("gradientDIR; "+gradientDIR+";   length; "+gradientDIR.length()+"   lastcha; "+lastcha+"   filename; "+filename);
 							
+							int Rposi=filename.indexOf("R_");
+							int VTposi=filename.indexOf("VT");
+							
+							if(Rposi!=-1)
+							filename=filename.substring(Rposi,filename.length());
+							
+							if(VTposi!=-1)
+							filename=filename.substring(VTposi,filename.length());
 							
 							File f = new File(gradientDIR+filename);
 							if (!f.exists()){
@@ -2949,6 +2957,8 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 							
 							areaarray[isli-1]=realval;
 							
+			//				IJ.log("slice "+isli+" realval; "+realval);
+							
 							impgradient.unlock();
 							impgradient.close();
 							
@@ -3018,15 +3028,15 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 				
 				String addST="_";
 				if(doubleGap<100000 && doubleGap>9999.999999)
-				addST=addST.replace("_","0");
+				addST=addST.replace("_","");
 				else if(doubleGap<10000 && doubleGap>999.999999)
-				addST=addST.replace("_","00");
+				addST=addST.replace("_","0");
 				else if(doubleGap<1000 && doubleGap>99.999999)
-				addST=addST.replace("_","000");
+				addST=addST.replace("_","00");
 				else if(doubleGap<100 && doubleGap>9.999999)
-				addST=addST.replace("_","0000");
+				addST=addST.replace("_","000");
 				else if(doubleGap<10)
-				addST=addST.replace("_","00000");
+				addST=addST.replace("_","0000");
 				
 				String finalpercent=String.format("%.10f",(normScorePercent[inorm]/normAreaPercent)*100);
 				
@@ -3037,7 +3047,7 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 				totalnamearray[inorm]=	S1.concat(namearray[inorm]);
 				
 				
-				//		IJ.log(String.valueOf(inorm)+"  "+gaparray[inorm]);
+		//		IJ.log(String.valueOf(inorm)+"  "+totalnamearray[inorm]);
 			}
 			
 			//Array.show(totalnamearray);
@@ -3163,7 +3173,7 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 					}
 				}//for(int iscan=0; iscan<totalnamearray.length; iscan++){
 				
-				//		IJ.log("slicename; "+slicename);
+		//		IJ.log("  "+inew+" slicename; "+slicename);
 				
 				String ADD0="0";
 				if(inew<10)
@@ -3174,12 +3184,12 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 				if(!slicename.equals("NN")){
 					String Newslicename="N";
 					
-					for(int searchS=1; searchS<=Finslice; searchS++){
+					for(int searchS=1; searchS<=totalnamearray.length; searchS++){
 						
 						String [] slititle = totalnamearray[searchS-1].split(" ");
 						
 						//	if(slicename.equals("001.04_517514142_RT_18U.tif"))
-						//	IJ.log(searchS+" slititle[1]; "+slititle[1]+"   slicename"+slicename);
+					//		IJ.log(searchS+" slititle[1]; "+slititle[1]+"   slicename"+slicename);
 						
 						double scorefinal = Double.parseDouble(slititle[0]);
 						
