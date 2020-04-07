@@ -2511,7 +2511,39 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 		ImagePlus Max60pxMask = impmask.duplicate();
 		IJ.run(Max60pxMask,"Maximum...", "radius=60"); 
 		
-		final ImageProcessor ipMax60pxMask = Max60pxMask.getProcessor();
+		ImageProcessor ipMax60pxMask= Max60pxMask.getProcessor();
+		
+		ImagePlus Max20pxMask = impmask.duplicate();
+		IJ.run(Max20pxMask,"Maximum...", "radius=20"); 
+		
+		ImageProcessor ipMax20pxMask= Max20pxMask.getProcessor();
+		
+		for(int i20del=0; i20del<sumpx; i20del++){
+			
+			int pix20 = ipMax20pxMask.get(i20del);
+			
+			if(pix20!=-16777216)
+			ipMax60pxMask.set(i20del,-16777216);
+		}
+		
+		Max20pxMask.unlock();
+		Max20pxMask.close();
+		
+		ImageConverter ic1 = new ImageConverter(Max60pxMask);
+		ic1.convertToGray16();
+		ipMax60pxMask= Max60pxMask.getProcessor();
+		
+		for(int i20del=0; i20del<sumpx; i20del++){
+			
+			int pix60 = ipMax60pxMask.get(i20del);
+			
+			if(pix60 != 0)
+			ipMax60pxMask.set(i20del,1);
+		}
+		
+		//	Max60pxMask.show();
+		
+		final ImageProcessor ipMax60pxMaskFinal = Max60pxMask.getProcessor();
 		
 		final ImageStack originalresultstack=impstack.getStack();
 		long startT=System.currentTimeMillis();
@@ -2572,8 +2604,13 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 			
 			ImagePlus impFlipValue1mask =  Value1maskIMP.duplicate();
 			ImageProcessor ipFlipValue1mask =impFlipValue1mask.getProcessor();
+			ImagePlus Max60pxMaskFlip = Max60pxMask.duplicate();
+			ImageProcessor ipMax60pxMaskFlip = Max60pxMaskFlip.getProcessor();
 			
 			if(mirror_maskEF){
+				
+				ipMax60pxMaskFlip.flipHorizontal();
+				
 				ipFlipValue1mask.flipHorizontal();// it doesnt need clipping for LM
 				ipFlipimpmaskpre.flipHorizontal();
 				
@@ -2585,8 +2622,18 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 				//		}
 			}
 			
+			final ImageProcessor ipMax60pxMaskFlipFinal =ipMax60pxMaskFlip;
 			final ImagePlus Flipimpmask = Flipimpmaskpre;
 			final ImageProcessor ipFlipValue1maskFinal = ipFlipValue1mask;
+			
+			impFlipValue1mask.unlock();
+			impFlipValue1mask.close();
+			
+			Value1maskIMP.unlock();
+			Value1maskIMP.close();
+			
+			Flipimpmaskpre.unlock();
+			Flipimpmaskpre.close();
 			
 			int PositiveStackSlicePre=stackslicenum;
 			
@@ -2662,6 +2709,8 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 							ImagePlus impgradient0 = new ImagePlus (titleslice,ipSLICE2);
 							
 							ImagePlus impgradient = impgradient0.duplicate();// fake intialization
+							ImagePlus tempstackimage = impgradient0.duplicate();
+							ImageProcessor IPtempstackimage = tempstackimage.getProcessor();
 							
 							ImagePlus imp10pxRGBdata = impgradient0.duplicate();
 							ImageProcessor IP10pxRGBdata = imp10pxRGBdata.getProcessor();
@@ -2678,7 +2727,7 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 							impgradient0.close();
 							
 							//fill white name
-							for(int ix=0; ix<300; ix++){
+							for(int ix=0; ix<330; ix++){
 								for(int iy=0; iy<100; iy++){
 									
 									int pixf=IP10pxRGBdata.getPixel(ix,iy);
@@ -2687,14 +2736,17 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 									int green1 = (pixf>>>8) & 0xff;
 									int blue1 = pixf & 0xff;
 									
-									if(red1>0 && green1>0 && blue1>0)
-									IP10pxRGBdata.set(ix,iy,-16777216);
+									if(red1>0 && green1>0 && blue1>0){
+										IP10pxRGBdata.set(ix,iy,-16777216);
+										IPtempstackimage.set(ix,iy,-16777216);
+									}
 								}
 							}
 							for(int ix=950; ix<WW2; ix++){// deleting color scale
 								for(int iy=0; iy<85; iy++){
 									
 									IP10pxRGBdata.set(ix,iy,-16777216);
+									IPtempstackimage.set(ix,iy,-16777216);
 								}
 							}
 							
@@ -2712,6 +2764,7 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 								IP10pxRGBdata.set(ipix, -16777216);
 								
 							}
+							
 							
 							IJ.run(imp10pxRGBdata,"Maximum...", "radius="+negativeradius+""); // 10px RGBmask from data stack
 							
@@ -2784,7 +2837,30 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 							
 							long SampleToMask=sumPXmeasure(impSLICE2);
 							
-							//		IJ.log("SampleToMask; "+SampleToMask);
+							ImagePlus impstack = new ImagePlus ("ipMax60pxMaskFinal",ipMax60pxMaskFinal);
+						//	if(test==1 && isli==15){
+						//		impstack.show();
+						//		return;
+						//	}
+							
+							long toomuchexpression=0;
+							for(int isurround=0; isurround<sumpx; isurround++){
+								
+								int pixposi = ipMax60pxMaskFinal.get(isurround);
+								if(pixposi==1){
+									int dataposipix = IPtempstackimage.get(isurround);
+									
+									int red = (dataposipix>>>16) & 0xff;
+									int green = (dataposipix>>>8) & 0xff;
+									int blue = dataposipix & 0xff;
+									
+									if(red>ThresmEf || green>ThresmEf || blue>ThresmEf )
+									toomuchexpression=toomuchexpression+1;
+								}
+							}
+							
+							//IJ.log(" "+isli+"SampleToMask; "+SampleToMask+"  toomuchexpression/2; "+toomuchexpression/2);
+							SampleToMask=SampleToMask+(toomuchexpression/2);
 							
 							//			if(test==1 && isli==5)
 							//		IJ.log("SampleToMask; "+SampleToMask);
@@ -2835,21 +2911,37 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 								
 								SampleToMaskflip=sumPXmeasure(impSLICE2F);
 								
+								long toomuchexpressionF=0;
+								for(int isurround=0; isurround<sumpx; isurround++){
+									
+									int pixposi = ipMax60pxMaskFlipFinal.get(isurround);
+									if(pixposi==1){
+										int dataposipix = IPtempstackimage.get(isurround);
+										
+										int red = (dataposipix>>>16) & 0xff;
+										int green = (dataposipix>>>8) & 0xff;
+										int blue = dataposipix & 0xff;
+										
+										if(red>ThresmEf || green>ThresmEf || blue>ThresmEf )
+										toomuchexpressionF=toomuchexpressionF+1;
+									}
+								}
+								
+								//IJ.log(" "+isli+"SampleToMaskflip; "+SampleToMaskflip+"  toomuchexpressionF/2; "+toomuchexpressionF/2);
+								SampleToMaskflip=SampleToMaskflip+(toomuchexpressionF/2);
 								
 								//	IJ.log("SampleToMaskflip; "+SampleToMaskflip);
-								//			if(test==1 && isli==5){
-								//			impSLICE2F.show();
-								
-								//			return ;
-								//		}
+							//				if(test==1 && isli==15){
+								//	impgradient0.show();
+								//	impSLICE2F.show();
+									//		return ;
+									//	}
 								impSLICE2F.unlock();
 								impSLICE2F.close();
 								
-								impFlipValue1mask.unlock();
-								impFlipValue1mask.close();
 								
 								long flipval=SampleToMaskflip;
-								if(flipval<=normalval){
+								if(flipval<normalval){
 									realval=flipval;
 									fliparray[isli-1]=1;
 								}
@@ -2862,8 +2954,26 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 							
 							int winindexF = OSTYPE.indexOf("windows");
 							
+							tempstackimage.unlock();
+							tempstackimage.close();
+							
+							impgradient0.unlock();
+							impgradient0.close();
+							
 							RGBMaskFlipIMP.unlock();
 							RGBMaskFlipIMP.close();
+							
+							Flipimpmask.unlock();
+							Flipimpmask.close();
+							
+							Max60pxMask.unlock();
+							Max60pxMask.close();
+							
+							Max60pxMaskFlip.unlock();
+							Max60pxMaskFlip.close();
+							
+							Value1maskIMPfinal.unlock();
+							Value1maskIMPfinal.close();
 							
 							if(winindexF==-1)
 							System.gc();
@@ -2873,8 +2983,7 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 			}//	for (int ithread = 0; ithread < threads.length; ithread++) {
 			startAndJoin(threads);
 			
-			Flipimpmask.unlock();
-			Flipimpmask.close();
+		
 			
 			for(int iscorescan=0; iscorescan<PositiveStackSlice; iscorescan++){
 				if(maxAreagap<areaarray[iscorescan])
@@ -2896,7 +3005,7 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 				double normAreaPercent=(double)areaarray[inorm]/(double)maxAreagap;
 				normScorePercent[inorm]=scorearray[inorm]/maxScore;
 				
-				normAreaPercent=normAreaPercent*2;
+				normAreaPercent=normAreaPercent*2.5;
 				if(normAreaPercent>1)
 				normAreaPercent=1;
 				
@@ -3103,12 +3212,10 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 				}//if(!slicename.equals("NN")){
 			}//for(int inew=0; inew<Finslice; inew++){
 			
-			Value1maskIMP.unlock();
-			Value1maskIMP.hide();
-			Value1maskIMP.close();
+			//Value1maskIMP.unlock();
+			//Value1maskIMP.close();
 			
 			//		impstack.unlock();
-			//		impstack.hide();
 			//		impstack.close();
 			
 			ImagePlus newimp = new ImagePlus("Search_Result"+maskname+"_"+negativeradius+"px", Stackfinal);
