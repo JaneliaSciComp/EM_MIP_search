@@ -1836,7 +1836,7 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 		
 		//	IJ.log("Done; "+increment+" mean; "+mean3+" Totalmaxvalue; "+totalmax+" desiremean; "+desiremean);
 		
-		if(EMsearch==true && posislice>2){
+		if(EMsearch==true && posislice>0){
 			IJ.showStatus("LM MIP sorting");
 			if(shownormal==true)
 			newimpOri.show();
@@ -1855,7 +1855,7 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 		}else if(EMsearch==true && posislice>0){
 			newimpOri.show();
 		}else
-		IJ.showMessage("no positive hit");
+	//	IJ.showMessage("no positive hit");
 		imask.unlock();
 		
 		//	System.gc();
@@ -2547,7 +2547,7 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 		
 		final ImageStack originalresultstack=impstack.getStack();
 		long startT=System.currentTimeMillis();
-		if(stackslicenum>1){
+		if(stackslicenum>0){
 		
 			
 			int [] fliparray = new int[stackslicenum];
@@ -3208,7 +3208,11 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 								hitslice.drawString("Flip",WW2/2-24,40,Color.white);
 							}
 							
+						
 							Stackfinal.addSlice(ADD0+inew+"_"+gaparray[inew].substring(0,gaparray[inew].indexOf("."))+"_"+savename2, hitslice);
+							
+							if(PositiveStackSlice==1)
+							IJ.log("Score; "+gaparray[0].substring(0,gaparray[0].indexOf("."))+"_"+savename2+"_end");
 							
 							totalnamearray[searchS-1]="0 NN";
 							break;
@@ -3228,14 +3232,25 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 			//		impstack.unlock();
 			//		impstack.close();
 			
-			ImagePlus newimp = new ImagePlus("Search_Result"+maskname+"_"+negativeradius+"px", Stackfinal);
+			String logtotal = IJ.getLog();
+			String prescore = logtotal.substring(logtotal.lastIndexOf("Score; ")+7,logtotal.lastIndexOf("_end"));
+			
+			IJ.log("prescore; "+prescore);
+			
+			ImagePlus newimp = null;
+			if(PositiveStackSlice>1)
+			newimp = new ImagePlus("Search_Result"+maskname+"_"+negativeradius+"px", Stackfinal);
+			else
+			newimp = new ImagePlus(prescore, Stackfinal);
+			
 			newimp.show();
 			long endT=System.currentTimeMillis();
 			long gapT=endT-startT;
 			
 			IJ.log(gapT/1000+" sec for the total sorting");
 			System.gc();
-		}//  if(PositiveStackSlice>1){
+			
+		}//  if(PositiveStackSlice>0){
 		return newimp;
 	}//public class CDM_area_measure 
 	
