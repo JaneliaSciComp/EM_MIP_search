@@ -257,7 +257,7 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 		boolean ShowCoE=(boolean)Prefs.get("ShowCoE.boolean",false);
 		int NumberSTintE=(int)Prefs.get("NumberSTintE.int",0);
 		threadNumE=(int)Prefs.get("threadNumE.int",8);
-		String gradientDIR_MCFO=(String)Prefs.get("gradientDIR_MCFO.String","");
+		String gradientDIR_MCFO=(String)Prefs.get("gradientDIR_MCFO.String","20");
 		boolean GradientOnTheFly_ = (boolean)Prefs.get("GradientOnTheFly_.boolean", false);
 		int maxnumber=(int)Prefs.get("maxnumber.int",100);
 		boolean shownormal=(boolean)Prefs.get("shownormal.boolean",false);
@@ -265,7 +265,6 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 		boolean maskiscom=(boolean)Prefs.get("maskiscom.boolean",false);
 		negativeradius = (String)Prefs.get("negativeradius.String","10");
 		boolean onematching=(boolean)Prefs.get("onematching.boolean",false);
-		String RGBDIR_MCFO =(String)Prefs.get("RGBDIR_MCFO.String","");
 		
 		if(datafileE >= imageno){
 			int singleslice=0; int Maxsingleslice=0; int MaxStack=0;
@@ -362,12 +361,6 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 		gd.setInsets(20, 0, 0);
 		gd.addStringField("Gradient file path: ", gradientDIR_MCFO,50);
 		
-		
-		gd.setInsets(20, 0, 0);
-		gd.addStringField("RGB10px file path: ", RGBDIR_MCFO,50);
-		
-		
-		
 		gd.setInsets(20, 220, 0);// top, left, bottom
 		gd.addCheckbox("Show Normal_MIP_search_result before the shape matching", shownormal);
 		
@@ -378,7 +371,7 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 		gd.addNumericField("Max number of the hits", maxnumber, 0);
 		
 		
-		String[] dupnumstr = new String[11];
+		String[] dupnumstr = new String[13];
 		for (int i = 0; i < dupnumstr.length; i++)
 		dupnumstr[i] = Integer.toString(i);
 		gd.addChoice("Duplicated line numbers; (only for GMR & VT), 0 = no check", dupnumstr, dupnumstr[duplineE]); //MaskE
@@ -424,7 +417,6 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 		pixThresE=(double)gd.getNextNumber();
 		pixfluE=(double)gd.getNextNumber();
 		gradientDIR_MCFO=gd.getNextString();
-		RGBDIR_MCFO=gd.getNextString();
 		GradientOnTheFly_ = false;//gd.getNextBoolean();
 		shownormal = gd.getNextBoolean();
 		onematching = gd.getNextBoolean();
@@ -443,21 +435,10 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 		ShowCoE = gd.getNextBoolean();
 		boolean EMsearch = true;
 		
-		IJ.log("gradientDIR_MCFO; "+gradientDIR_MCFO +"  negativeradius; "+negativeradius+" RGBDIR_MCFO; "+RGBDIR_MCFO);
+		IJ.log("gradientDIR_MCFO; "+gradientDIR_MCFO +"  negativeradius; "+negativeradius);
 		IJ.log("threadNumE; "+threadNumE);
-		
-		File file = new File(RGBDIR_MCFO);
+		File file = new File(gradientDIR_MCFO);
 		boolean graExt = file.exists();
-		
-		if(graExt==false){
-			IJ.log("ChooseRGB10px directory");
-			DirectoryChooser dirGradient = new DirectoryChooser("ChooseRGB10px directory");
-			RGBDIR_MCFO = dirGradient.getDirectory();
-		}
-		Prefs.set("RGBDIR_MCFO.String",RGBDIR_MCFO);
-		
-		file = new File(gradientDIR_MCFO);
-		graExt = file.exists();
 		
 		if(graExt==false){
 			IJ.log("Choose gradient tiff directory");
@@ -1682,8 +1663,10 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 				slnum = finallbs.size();
 				if(slnum>400){
 					slnum=400;
-					if(maxnumber>400)
-					slnum=maxnumber+200;
+					if(maxnumber>400){
+						IJ.log("maxnumber is; "+maxnumber+"  finallbs.size(); "+finallbs.size());
+						slnum=maxnumber+200;
+					}
 				}
 				if(fileformat.equals("tif none") || fileformat.equals("tif PackBits")){
 					if (st3.isVirtual()) {
@@ -1873,7 +1856,7 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 			RoiManager rois = new RoiManager(true);
 			rois.runCommand(imask,"Select All");
 			
-			ImagePlus newimp2 = CDM_area_measure (newimpOri, imask,gradientDIR_MCFO,GradientOnTheFly_,ThresE,maxnumber,mirror_maskE,showFlip,threadNumE,FLpositive,st3,slicenumber,onematching,RGBDIR_MCFO);
+			ImagePlus newimp2 = CDM_area_measure (newimpOri, imask,gradientDIR_MCFO,GradientOnTheFly_,ThresE,maxnumber,mirror_maskE,showFlip,threadNumE,FLpositive,st3,slicenumber,onematching);
 			
 			if(shownormal==false){
 				newimpOri.unlock();
@@ -2519,7 +2502,7 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 		
 	}//public class ColorMIPMaskCompare {
 	
-	ImagePlus CDM_area_measure (ImagePlus impstack, final ImagePlus impmask, final String gradientDIR, final boolean rungradientonthefly, final int ThresmEf, final int maxnumberF,final boolean mirror_maskEF, String showFlipF, final int threadNumEF, int FLpositiveF, ImageStack st3F, int slicenumberF, final boolean onematchingF, final String RGBDIR){
+	ImagePlus CDM_area_measure (ImagePlus impstack, final ImagePlus impmask, final String gradientDIR, final boolean rungradientonthefly, final int ThresmEf, final int maxnumberF,final boolean mirror_maskEF, String showFlipF, final int threadNumEF, int FLpositiveF, ImageStack st3F, int slicenumberF, final boolean onematchingF){
 		
 		
 		int Threval=0; int stackslicenum=0;
@@ -2571,7 +2554,8 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 			ipMax60pxMask.set(i20del,1);
 		}
 		
-		//	Max60pxMask.show();
+	//	Max60pxMask.show();
+	
 		
 		final ImageProcessor ipMax60pxMaskFinal = Max60pxMask.getProcessor();
 		
@@ -2593,14 +2577,11 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 			//						IJ.log("OSTYPE; "+OSTYPE);
 			
 			String gradientDIRopen=gradientDIR;
-			String RGBDIRopen=RGBDIR;
 			
 			if(OSTYPE.equals("mac os x")){
 				if(!lastcha.equals("/"))
 				gradientDIRopen=gradientDIR+"/";
-				RGBDIRopen=RGBDIR+"/";
 				Prefs.set("gradientDIR_MCFO.String",gradientDIRopen);
-				Prefs.set("RGBDIR_MCFO.String",RGBDIRopen);
 			}
 			
 			int winindex = OSTYPE.indexOf("windows");
@@ -2610,10 +2591,8 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 				if(!lastcha.equals(filesepST)){
 					
 					gradientDIRopen=gradientDIR+"\\";
-					RGBDIRopen=RGBDIR+"\\";
 					IJ.log("win added, File.separator; "+File.separator+"   lastcha; "+lastcha);
 					Prefs.set("gradientDIR_MCFO.String",gradientDIRopen);
-					Prefs.set("RGBDIR_MCFO.String",RGBDIRopen);
 				}
 			}
 			
@@ -2747,42 +2726,9 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 							ImagePlus tempstackimage = impgradient0.duplicate();
 							ImageProcessor IPtempstackimage = tempstackimage.getProcessor();
 							
-							int undeindex=namearray[isli-1].indexOf("_");
-							String filename=namearray[isli-1].substring(undeindex+1, namearray[isli-1].length());
-							
-							if(filename.endsWith(".tif"))
-							filename=filename.replace(".tif",".png");
-						
-							//		IJ.log("gradientDIR; "+gradientDIR+";   length; "+gradientDIR.length()+"   lastcha; "+lastcha+"   filename; "+filename);
-							
-							int Rposi=filename.indexOf("R_");
-							int VTposi=filename.indexOf("VT");
-							
-							if(Rposi!=-1)
-							filename=filename.substring(Rposi,filename.length());
-							
-							if(VTposi!=-1)
-							filename=filename.substring(VTposi,filename.length());
-							
-							
 							ImagePlus imp10pxRGBdata = impgradient0.duplicate();
-							
-							// RGB 10px MAX open///////////////
-							
-					//		filename=filename.replace(".png",".tif");
-							File fRGB = new File(RGBDIR+filename);
-							
-							if (!fRGB.exists()){
-								IJ.log("The RGBfile cannot open; "+RGBDIR+filename+"   namearray[isli-1]; "+namearray[isli-1]);
-								return;
-								
-							}else{
-								
-								imp10pxRGBdata = IJ.openImage(RGBDIR+filename);
-								//		IJ.log("gradientDIR+filename; "+gradientDIR+filename);
-							}
-							
 							ImageProcessor IP10pxRGBdata = imp10pxRGBdata.getProcessor();
+							
 							
 							//		int test=1;
 							
@@ -2798,24 +2744,43 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 							for(int ix=0; ix<330; ix++){
 								for(int iy=0; iy<100; iy++){
 									
-									int pixf=IPtempstackimage.getPixel(ix,iy);
+									int pixf=IP10pxRGBdata.getPixel(ix,iy);
 									
 									int red1 = (pixf>>>16) & 0xff;
 									int green1 = (pixf>>>8) & 0xff;
 									int blue1 = pixf & 0xff;
 									
 									if(red1>0 && green1>0 && blue1>0){
-									
+										IP10pxRGBdata.set(ix,iy,-16777216);
 										IPtempstackimage.set(ix,iy,-16777216);
 									}
 								}
 							}
 							for(int ix=950; ix<WW2; ix++){// deleting color scale
 								for(int iy=0; iy<85; iy++){
+									
+									IP10pxRGBdata.set(ix,iy,-16777216);
 									IPtempstackimage.set(ix,iy,-16777216);
 								}
 							}
 							
+							
+							
+							for(int ipix=0; ipix<sumpx; ipix++){// 255 binary mask creation
+								
+								int RGBpix=IP10pxRGBdata.get(ipix);
+								
+								int redval = (RGBpix>>>16) & 0xff;
+								int greenval = (RGBpix>>>8) & 0xff;
+								int blueval = RGBpix & 0xff;
+								
+								if(redval<=ThresmEf && greenval<=ThresmEf && blueval<=ThresmEf )
+								IP10pxRGBdata.set(ipix, -16777216);
+								
+							}
+							
+							
+							IJ.run(imp10pxRGBdata,"Maximum...", "radius="+negativeradius+""); // 10px RGBmask from data stack
 							
 							ImagePlus RGBMaskFlipIMP = imp10pxRGBdata.duplicate();
 							ImageProcessor IPflip10pxRGBmask=RGBMaskFlipIMP.getProcessor();
@@ -2827,10 +2792,34 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 							
 							/////////////end
 							
-							// gradient MIP open///////////////
-					//		filename=filename.replace(".tif",".png");
+							int undeindex=namearray[isli-1].indexOf("_");
+							String filename=namearray[isli-1].substring(undeindex+1, namearray[isli-1].length());
+							int pngindex = filename.lastIndexOf(".png");
+							
+							if(pngindex==-1){
+							
+								if(filename.endsWith(".tif"))
+								filename=filename.replace(".tif",".png");
+								else
+								filename=filename+".png";
+							}
+							//		IJ.log("gradientDIR; "+gradientDIR+";   length; "+gradientDIR.length()+"   lastcha; "+lastcha+"   filename; "+filename);
+							
+							int HRposi=filename.indexOf("HR_");
+							int Rposi=filename.indexOf("R_");
+							int VTposi=filename.indexOf("VT");
+							int underindex=filename.indexOf("_");
+							
+							if(Rposi!=-1 && HRposi==-1)
+							filename=filename.substring(Rposi,filename.length());
+							
+							else if(VTposi!=-1)
+							filename=filename.substring(VTposi,filename.length());
+							
+							
 							File f = new File(gradientDIR+filename);
 						
+							
 							if (!f.exists()){
 								IJ.log("The file cannot open; "+gradientDIR+filename+"   namearray[isli-1]; "+namearray[isli-1]);
 								return;
@@ -2840,6 +2829,7 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 								impgradient = IJ.openImage(gradientDIR+filename);
 								//		IJ.log("gradientDIR+filename; "+gradientDIR+filename);
 							}
+							
 							
 							ImagePlus impSLICE2 = impgradient.duplicate();
 							
@@ -2902,7 +2892,7 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 								}
 							}
 							
-							//IJ.log(" "+isli+"SampleToMask; "+SampleToMask+"  toomuchexpression/2; "+toomuchexpression/2);
+					//		IJ.log(" "+isli+"SampleToMask; "+SampleToMask+"  toomuchexpression/2; "+toomuchexpression/2);
 							SampleToMask=SampleToMask+(toomuchexpression/2);
 							
 							//			if(test==1 && isli==5)
@@ -3247,7 +3237,7 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 							}
 							
 							
-							Stackfinal.addSlice(ADD0+inew+"_"+gaparray[inew].substring(0,gaparray[inew].indexOf("."))+"_"+savename2, hitslice);
+							Stackfinal.addSlice(gaparray[inew].substring(0,gaparray[inew].indexOf("."))+"_"+savename2, hitslice);//ADD0+inew+"_"+
 							
 							if(onematchingF==true)
 							IJ.log("Score; "+areaarray[inew]+"_"+savename2+"_end");
@@ -3483,13 +3473,13 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 		
 		for(int icompare=0; icompare<sumpxF; icompare++){
 			
-			int dilatedmaskpix = IP10pxRGBmaskF.get(icompare);
+			int orimaskpix= IPOriStackResultF.get(icompare);
 			
-			if(dilatedmaskpix!=-16777216){// if 10px expand RGBmask is not 0
+			if(orimaskpix!=-16777216){// if 10px expand RGBmask is not 0
 				
-				int orimaskpix= IPOriStackResultF.get(icompare);
+				int dilatedmaskpix = IP10pxRGBmaskF.get(icompare);
 				
-				if(orimaskpix!=-16777216){// / if original RGBmask is not 0
+				if(dilatedmaskpix!=-16777216){// / if original RGBmask is not 0
 					
 					//	IJ.log("orimaskpix; "+orimaskpix);
 					
