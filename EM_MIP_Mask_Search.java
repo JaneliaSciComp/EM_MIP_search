@@ -17,6 +17,16 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.ListIterator; 
+import java.util.Iterator; 
+
+import java.io.File;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.io.IOException;
+import java.awt.*;
 
 import javax.imageio.ImageIO; 
 import javax.imageio.ImageReader; 
@@ -24,13 +34,6 @@ import javax.imageio.stream.ImageInputStream;
 import javax.imageio.metadata.IIOMetadata;
 import javax.imageio.metadata.IIOMetadataNode;
 import javax.imageio.ImageTypeSpecifier;
-
-import java.io.File;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.io.IOException;
-import java.awt.*;
 
 import ij.*;
 import ij.gui.*;
@@ -535,6 +538,12 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 			IJ.showMessage ("Image size is different between the mask and data!  mask height; "+height+" px   data height; "+heightD+" px");
 			IJ.log("Image size is different between the mask and data!");
 			return;
+		}
+		
+		for(int ix=950; ix<width; ix++){// deleting color scale from mask
+			for(int iy=0; iy<85; iy++){
+				ip1.set(ix,iy,-16777216);
+			}
 		}
 		
 		if(IJ.escapePressed())

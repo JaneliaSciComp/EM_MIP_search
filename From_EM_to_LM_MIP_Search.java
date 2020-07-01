@@ -545,6 +545,14 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 			return;
 		}
 		
+		for(int ix=950; ix<width; ix++){// deleting color scale from mask
+			for(int iy=0; iy<85; iy++){
+				ip1.set(ix,iy,-16777216);
+			}
+		}
+		
+		
+		
 		if(IJ.escapePressed())
 		return;
 		
@@ -605,7 +613,7 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 				}
 			}
 			
-			IJ.log("compressio; "+fileformat);
+			IJ.log("compression; "+fileformat);
 		}
 		
 		ArrayList<String> srlabels = new ArrayList<String>();
@@ -953,7 +961,8 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 												if(fNumberSTint==0){
 													String numstr = getZeroFilledNumString(posipersent2, 3, 2);
 													title = (flabelmethod==0 || flabelmethod==1) ? numstr+"_"+linename : linename+"_"+numstr;
-												}else if(fNumberSTint==1) {
+												}
+												else if(fNumberSTint==1) {
 													String posiST=getZeroFilledNumString(posi, 4);
 													title = (flabelmethod==0 || flabelmethod==1) ? posiST+"_"+linename : linename+"_"+posiST;
 												}
@@ -1104,6 +1113,10 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 				
 				int GMRPosi=(linenameTmpo.indexOf("GMR"));
 				int RPosi=(linenameTmpo.indexOf("R_"));
+				int TRposi=(linenameTmpo.indexOf("_TR_"));
+
+				if(TRposi!=-1)
+				RPosi=-1;
 				
 				int JRCPosi=(linenameTmpo.indexOf("JRC_"));
 				int BJDPosi=(linenameTmpo.indexOf("BJD"));
@@ -1118,7 +1131,7 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 				RPosi=-1;
 				
 				if(RPosi!=-1 && GMRPosi==-1){// it is R
-					
+				//	IJ.log(linenameTmpo);
 					int UnderS2=(linenameTmpo.indexOf("_", RPosi+2 ));// end of line number
 					
 					LineNo=linenameTmpo.substring(RPosi+2, UnderS2);// R_01A02
@@ -2782,6 +2795,12 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 							
 							IJ.run(imp10pxRGBdata,"Maximum...", "radius="+negativeradius+""); // 10px RGBmask from data stack
 							
+						//	if(test==1 && isli==2){
+						//		imp10pxRGBdata.show();
+						//				return ;
+						//	}
+							
+							
 							ImagePlus RGBMaskFlipIMP = imp10pxRGBdata.duplicate();
 							ImageProcessor IPflip10pxRGBmask=RGBMaskFlipIMP.getProcessor();
 							
@@ -2862,8 +2881,8 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 							
 							impSLICE2 = deleteMatchZandCreateZnegativeScoreIMG (impSLICE2,impmaskdup,imp10pxRGBdata,sumpx);// adding color px within 10px expand RGB
 							
-							
-							//	if(test==1 && isli==5){//&& isli==2
+							// show Z-gap
+							//	if(test==1 && isli==2){//&& isli==2
 							//		impSLICE2.show();// 
 							//			return; 
 							//	}
@@ -2892,8 +2911,10 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 								}
 							}
 							
-					//		IJ.log(" "+isli+"SampleToMask; "+SampleToMask+"  toomuchexpression/2; "+toomuchexpression/2);
-							SampleToMask=SampleToMask+(toomuchexpression/2);
+						//	if(test==1 && isli==2)
+						//	IJ.log("z gap negative score slice2; "+SampleToMask+"  surrounding px toomuchexpression/3; "+toomuchexpression/3);
+							
+							SampleToMask=SampleToMask+(toomuchexpression/3);
 							
 							//			if(test==1 && isli==5)
 							//		IJ.log("SampleToMask; "+SampleToMask);
@@ -2960,8 +2981,10 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 									}
 								}
 								
-								//IJ.log(" "+isli+"SampleToMaskflip; "+SampleToMaskflip+"  toomuchexpressionF/2; "+toomuchexpressionF/2);
-								SampleToMaskflip=SampleToMaskflip+(toomuchexpressionF/2);
+								if(test==1 && isli==2)
+								IJ.log(" "+isli+"SampleToMaskflip; "+SampleToMaskflip+"  toomuchexpressionF/3; "+toomuchexpressionF/3);
+								
+								SampleToMaskflip=SampleToMaskflip+(toomuchexpressionF/3);
 								
 								//	IJ.log("SampleToMaskflip; "+SampleToMaskflip);
 								//				if(test==1 && isli==15){
@@ -3049,7 +3072,8 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 				
 				double doubleGap=(normScorePercent[inorm]/normAreaPercent)*100;
 				
-				//	IJ.log(inorm+1+"   normAreaPercent; "+normAreaPercent+"  normScorePercent[inorm]; "+normScorePercent[inorm]+"  doubleGap; "+doubleGap);
+			//	if(inorm<4)
+			//		IJ.log(inorm+1+"   normAreaPercent; "+normAreaPercent+"  normScorePercent[inorm]; "+normScorePercent[inorm]+"  doubleGap; "+doubleGap);
 				
 				String addST="_";
 				if(doubleGap<100000 && doubleGap>9999.999999)
@@ -3073,8 +3097,7 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 				String S1=gaparray[inorm].concat(" ");
 				
 				totalnamearray[inorm]=	S1.concat(namearray[inorm]);
-				
-				
+
 				//		IJ.log(String.valueOf(inorm)+"  "+totalnamearray[inorm]);
 			}
 			
