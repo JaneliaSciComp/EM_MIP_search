@@ -1106,6 +1106,9 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 				int RPosi=(linenameTmpo.indexOf("R_"));
 				int TRposi=(linenameTmpo.indexOf("_TR_"));
 				
+				if(RPosi>9)
+				RPosi=-1;
+				
 				if(TRposi!=-1)
 				RPosi=-1;
 				
