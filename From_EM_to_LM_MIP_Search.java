@@ -46,7 +46,7 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 	ImagePlus imp, imp2;
 	ImageProcessor ip1, nip1, ip2, ip3, ip4, ip5, ip6, ip33;
 	int pix1=0, CheckPost,UniqueLineName=0,IsPosi,threadNumE=0,FLpositive=0;
-	int pix3=0,Check=0,arrayPosition=0,dupdel=1,FinalAdded=1,enddup=0;
+	int pix3=0,Check=0,arrayPosition=0,dupdel=1,FinalAdded=1,enddup=0,unwantednum=0;;
 	ImagePlus newimp, newimpOri;
 	String linename,LineNo, LineNo2,preLineNo="A",FullName,LineName,arrayName,PostName,negativeradius="";
 	String args [] = new String[10],PreFullLineName,ScorePre,TopShortLinename;
@@ -265,7 +265,7 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 		boolean maskiscom=(boolean)Prefs.get("maskiscom.boolean",false);
 		negativeradius = (String)Prefs.get("negativeradius.String","20");
 		boolean onematching=(boolean)Prefs.get("onematching.boolean",false);
-		int unwantednum = (int)Prefs.get("unwantednum.int",1);
+		unwantednum = (int)Prefs.get("unwantednum.int",1);
 		
 		if(datafileE >= imageno){
 			int singleslice=0; int Maxsingleslice=0; int MaxStack=0;
@@ -426,7 +426,6 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 		
 		negativeradius = (String)gd.getNextRadioButton();
 		unwantednum= gd.getNextChoiceIndex();
-		final int unwantednumF=unwantednum;
 		
 		pixThresE=(double)gd.getNextNumber();
 		pixfluE=(double)gd.getNextNumber();
@@ -2532,7 +2531,7 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 	
 	ImagePlus CDM_area_measure (ImagePlus impstack, final ImagePlus impmask, final String gradientDIR, final boolean rungradientonthefly, final int ThresmEf, final int maxnumberF,final boolean mirror_maskEF, String showFlipF, final int threadNumEF, int FLpositiveF, ImageStack st3F, int slicenumberF, final boolean onematchingF){
 		
-		
+		final int unwantednumF=unwantednum;
 		int Threval=0; int stackslicenum=0;
 		
 		int wList [] = WindowManager.getIDList();
