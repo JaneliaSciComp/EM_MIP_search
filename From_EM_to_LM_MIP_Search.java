@@ -263,8 +263,9 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 		boolean shownormal=(boolean)Prefs.get("shownormal.boolean",false);
 		String showFlip=(String)Prefs.get("showFlip.String","None");
 		boolean maskiscom=(boolean)Prefs.get("maskiscom.boolean",false);
-		negativeradius = (String)Prefs.get("negativeradius.String","10");
+		negativeradius = (String)Prefs.get("negativeradius.String","20");
 		boolean onematching=(boolean)Prefs.get("onematching.boolean",false);
+		int unwantednum = (int)Prefs.get("unwantednum.int",1);
 		
 		if(datafileE >= imageno){
 			int singleslice=0; int Maxsingleslice=0; int MaxStack=0;
@@ -323,11 +324,11 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 		GenericDialog gd = new GenericDialog("From_EM_to_LM_MIP_Mask search");
 		gd.addChoice("Mask", titles, titles[MaskE]); //MaskE
 		gd.addSlider("1.Threshold for mask", 0, 255, ThresmE);
-		gd.setInsets(0, 340, 0);
+		gd.setInsets(0, 467, 0);//308
 		gd.addCheckbox("1.Add mirror search", mirror_maskE);
 		
 		String []	com = {"ShowFlip hits on a same side (Not for commissure)","None"};//"ShowComissure matching (Bothside commissure)"
-		gd.setInsets(0, 180, 0);
+		gd.setInsets(0, 458, 0);
 		gd.addRadioButtonGroup("Show special matching: ", com, 1, 2, showFlip);
 		
 		
@@ -340,7 +341,7 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 		gd.addChoice("Negative Mask", negtitles, negtitles[NegMaskE]); //Negative MaskE
 		gd.addSlider("2.Threshold for negative mask", 0, 255, NegThresmE);
 		gd.setInsets(0, 340, 0);
-		gd.addCheckbox("2.Add mirror search", mirror_negmaskE);
+	//	gd.addCheckbox("2.Add mirror search", mirror_negmaskE);
 		
 		gd.setInsets(20, 0, 0);
 		gd.addChoice("LM_color_MIP Data for the search", titles, titles[datafileE]); //Data
@@ -351,8 +352,14 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 		//	gd.addSlider("100x % of Positive PX Threshold", (double) 0, (double) 10000, pixThresE);
 		
 		String []	com2 = {"20","10","5"};//"ShowComissure matching (Bothside commissure)"
-		gd.setInsets(0, 180, 0);
+		gd.setInsets(30, 460, 0);		
+//		gd.setInsets(0, 180, 0);
 		gd.addRadioButtonGroup("Negative score region radius: px ", com2, 1, 2, negativeradius);
+		
+		
+	//	gd.setInsets(0, 300, 0);
+		String []	unwanted = {"2","3","4","5"};
+		gd.addChoice("Dividing value of unwanted GAL4 expression score; less number is heavier", unwanted, unwanted[unwantednum]); //Data
 		
 		gd.setInsets(20, 0, 0);
 		gd.addNumericField("Positive PX % Threshold: matching is 1.5-3%", pixThresE, 4);
@@ -361,11 +368,11 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 		gd.setInsets(20, 0, 0);
 		gd.addStringField("Gradient file path: ", gradientDIR_MCFO,50);
 		
-		gd.setInsets(20, 220, 0);// top, left, bottom
+		gd.setInsets(20, 467, 0);// top, left, bottom
 		gd.addCheckbox("Show Normal_MIP_search_result before the shape matching", shownormal);
 		
-		gd.setInsets(20, 220, 0);// top, left, bottom
-		gd.addCheckbox("1vs1 matching", onematching);
+	//	gd.setInsets(20, 220, 0);// top, left, bottom
+//		gd.addCheckbox("1vs1 matching", onematching);
 		//		gd.addCheckbox("GradientOnTheFly; (slower with ON)",GradientOnTheFly_);
 		gd.setInsets(20, 0, 0);
 		gd.addNumericField("Max number of the hits", maxnumber, 0);
@@ -409,17 +416,24 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 		
 		NegMaskE = gd.getNextChoiceIndex(); //Negative MaskE
 		NegThresmE=(int)gd.getNextNumber();
-		mirror_negmaskE = gd.getNextBoolean();
+		
+		mirror_negmaskE=false;
+		if(mirror_maskE==true)
+		mirror_negmaskE=true;
+		
 		datafileE = gd.getNextChoiceIndex(); //Color MIP
 		ThresE=(int)gd.getNextNumber();
 		
 		negativeradius = (String)gd.getNextRadioButton();
+		unwantednum= gd.getNextChoiceIndex();
+		final int unwantednumF=unwantednum;
+		
 		pixThresE=(double)gd.getNextNumber();
 		pixfluE=(double)gd.getNextNumber();
 		gradientDIR_MCFO=gd.getNextString();
 		GradientOnTheFly_ = false;//gd.getNextBoolean();
 		shownormal = gd.getNextBoolean();
-		onematching = gd.getNextBoolean();
+//		onematching = gd.getNextBoolean();
 		
 		maxnumber=(int)gd.getNextNumber();
 		duplineE=Integer.parseInt(dupnumstr[gd.getNextChoiceIndex()]);
@@ -509,6 +523,7 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 		Prefs.set("onematching.boolean",onematching);
 		Prefs.set("showFlip.String",showFlip);
 		Prefs.set("negativeradius.String",negativeradius);
+		Prefs.set("maxnumber.int",unwantednum);
 		
 		
 		double pixfludub=pixfluE/100;
@@ -2913,8 +2928,9 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 							
 						//	if(test==1 && isli==2)
 						//	IJ.log("z gap negative score slice2; "+SampleToMask+"  surrounding px toomuchexpression/3; "+toomuchexpression/3);
+							int divid = unwantednumF+2;
 							
-							SampleToMask=SampleToMask+(toomuchexpression/3);
+							SampleToMask=SampleToMask+(toomuchexpression/divid);
 							
 							//			if(test==1 && isli==5)
 							//		IJ.log("SampleToMask; "+SampleToMask);
@@ -2982,9 +2998,9 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 								}
 								
 								if(test==1 && isli==2)
-								IJ.log(" "+isli+"SampleToMaskflip; "+SampleToMaskflip+"  toomuchexpressionF/3; "+toomuchexpressionF/3);
+								IJ.log(" "+isli+"SampleToMaskflip; "+SampleToMaskflip+"  toomuchexpressionF/"+divid+"; "+toomuchexpressionF/divid);
 								
-								SampleToMaskflip=SampleToMaskflip+(toomuchexpressionF/3);
+								SampleToMaskflip=SampleToMaskflip+(toomuchexpressionF/divid);
 								
 								//	IJ.log("SampleToMaskflip; "+SampleToMaskflip);
 								//				if(test==1 && isli==15){
