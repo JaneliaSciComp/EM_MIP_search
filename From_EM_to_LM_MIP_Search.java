@@ -46,7 +46,7 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 	ImagePlus imp, imp2;
 	ImageProcessor ip1, nip1, ip2, ip3, ip4, ip5, ip6, ip33;
 	int pix1=0, CheckPost,UniqueLineName=0,IsPosi,threadNumE=0,FLpositive=0;
-	int pix3=0,Check=0,arrayPosition=0,dupdel=1,FinalAdded=1,enddup=0,unwantednum=0;;
+	int pix3=0,Check=0,arrayPosition=0,dupdel=1,FinalAdded=1,enddup=0,unwantednum=0;
 	ImagePlus newimp, newimpOri;
 	String linename,LineNo, LineNo2,preLineNo="A",FullName,LineName,arrayName,PostName,negativeradius="";
 	String args [] = new String[10],PreFullLineName,ScorePre,TopShortLinename;
@@ -341,7 +341,7 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 		gd.addChoice("Negative Mask", negtitles, negtitles[NegMaskE]); //Negative MaskE
 		gd.addSlider("2.Threshold for negative mask", 0, 255, NegThresmE);
 		gd.setInsets(0, 340, 0);
-	//	gd.addCheckbox("2.Add mirror search", mirror_negmaskE);
+		//	gd.addCheckbox("2.Add mirror search", mirror_negmaskE);
 		
 		gd.setInsets(20, 0, 0);
 		gd.addChoice("LM_color_MIP Data for the search", titles, titles[datafileE]); //Data
@@ -353,11 +353,11 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 		
 		String []	com2 = {"20","10","5"};//"ShowComissure matching (Bothside commissure)"
 		gd.setInsets(30, 460, 0);		
-//		gd.setInsets(0, 180, 0);
+		//		gd.setInsets(0, 180, 0);
 		gd.addRadioButtonGroup("Negative score region radius: px ", com2, 1, 2, negativeradius);
 		
 		
-	//	gd.setInsets(0, 300, 0);
+		//	gd.setInsets(0, 300, 0);
 		String []	unwanted = {"2","3","4","5"};
 		gd.addChoice("Dividing value of unwanted GAL4 expression score; less number is heavier", unwanted, unwanted[unwantednum]); //Data
 		
@@ -371,8 +371,8 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 		gd.setInsets(20, 467, 0);// top, left, bottom
 		gd.addCheckbox("Show Normal_MIP_search_result before the shape matching", shownormal);
 		
-	//	gd.setInsets(20, 220, 0);// top, left, bottom
-//		gd.addCheckbox("1vs1 matching", onematching);
+		//	gd.setInsets(20, 220, 0);// top, left, bottom
+		//		gd.addCheckbox("1vs1 matching", onematching);
 		//		gd.addCheckbox("GradientOnTheFly; (slower with ON)",GradientOnTheFly_);
 		gd.setInsets(20, 0, 0);
 		gd.addNumericField("Max number of the hits", maxnumber, 0);
@@ -432,7 +432,7 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 		gradientDIR_MCFO=gd.getNextString();
 		GradientOnTheFly_ = false;//gd.getNextBoolean();
 		shownormal = gd.getNextBoolean();
-//		onematching = gd.getNextBoolean();
+		//		onematching = gd.getNextBoolean();
 		
 		maxnumber=(int)gd.getNextNumber();
 		duplineE=Integer.parseInt(dupnumstr[gd.getNextChoiceIndex()]);
@@ -489,8 +489,8 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 		if(labelmethodSTR=="overlap value + line name")
 		labelmethodE=1;
 		
-	//	if(onematching==true)
-	//	ScoringM="absolute value";
+		//	if(onematching==true)
+		//	ScoringM="absolute value";
 		
 		if(ScoringM=="%")
 		NumberSTintE=0;
@@ -522,7 +522,7 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 		Prefs.set("onematching.boolean",onematching);
 		Prefs.set("showFlip.String",showFlip);
 		Prefs.set("negativeradius.String",negativeradius);
-		Prefs.set("maxnumber.int",unwantednum);
+		Prefs.set("unwantednum.int",unwantednum);
 		
 		
 		double pixfludub=pixfluE/100;
@@ -1128,7 +1128,7 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 				int GMRPosi=(linenameTmpo.indexOf("GMR"));
 				int RPosi=(linenameTmpo.indexOf("R_"));
 				int TRposi=(linenameTmpo.indexOf("_TR_"));
-
+				
 				if(TRposi!=-1)
 				RPosi=-1;
 				
@@ -1145,7 +1145,7 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 				RPosi=-1;
 				
 				if(RPosi!=-1 && GMRPosi==-1){// it is R
-				//	IJ.log(linenameTmpo);
+					//	IJ.log(linenameTmpo);
 					int UnderS2=(linenameTmpo.indexOf("_", RPosi+2 ));// end of line number
 					
 					LineNo=linenameTmpo.substring(RPosi+2, UnderS2);// R_01A02
@@ -2581,8 +2581,8 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 			ipMax60pxMask.set(i20del,1);
 		}
 		
-	//	Max60pxMask.show();
-	
+		//	Max60pxMask.show();
+		
 		
 		final ImageProcessor ipMax60pxMaskFinal = Max60pxMask.getProcessor();
 		
@@ -2809,10 +2809,10 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 							
 							IJ.run(imp10pxRGBdata,"Maximum...", "radius="+negativeradius+""); // 10px RGBmask from data stack
 							
-						//	if(test==1 && isli==2){
-						//		imp10pxRGBdata.show();
-						//				return ;
-						//	}
+							//	if(test==1 && isli==2){
+							//		imp10pxRGBdata.show();
+							//				return ;
+							//	}
 							
 							
 							ImagePlus RGBMaskFlipIMP = imp10pxRGBdata.duplicate();
@@ -2830,7 +2830,7 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 							int pngindex = filename.lastIndexOf(".png");
 							
 							if(pngindex==-1){
-							
+								
 								if(filename.endsWith(".tif"))
 								filename=filename.replace(".tif",".png");
 								else
@@ -2851,7 +2851,7 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 							
 							
 							File f = new File(gradientDIR+filename);
-						
+							
 							
 							if (!f.exists()){
 								IJ.log("The file cannot open; "+gradientDIR+filename+"   namearray[isli-1]; "+namearray[isli-1]);
@@ -2925,8 +2925,8 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 								}
 							}
 							
-						//	if(test==1 && isli==2)
-						//	IJ.log("z gap negative score slice2; "+SampleToMask+"  surrounding px toomuchexpression/3; "+toomuchexpression/3);
+							//	if(test==1 && isli==2)
+							//	IJ.log("z gap negative score slice2; "+SampleToMask+"  surrounding px toomuchexpression/3; "+toomuchexpression/3);
 							int divid = unwantednumF+2;
 							
 							SampleToMask=SampleToMask+(toomuchexpression/divid);
@@ -3020,7 +3020,7 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 							
 							areaarray[isli-1]=realval;
 							
-						//	IJ.log("slice "+isli+" realval; "+realval);
+							//	IJ.log("slice "+isli+" realval; "+realval);
 							
 							impgradient.unlock();
 							impgradient.close();
@@ -3087,8 +3087,8 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 				
 				double doubleGap=(normScorePercent[inorm]/normAreaPercent)*100;
 				
-			//	if(inorm<4)
-			//		IJ.log(inorm+1+"   normAreaPercent; "+normAreaPercent+"  normScorePercent[inorm]; "+normScorePercent[inorm]+"  doubleGap; "+doubleGap);
+				//	if(inorm<4)
+				//		IJ.log(inorm+1+"   normAreaPercent; "+normAreaPercent+"  normScorePercent[inorm]; "+normScorePercent[inorm]+"  doubleGap; "+doubleGap);
 				
 				String addST="_";
 				if(doubleGap<100000 && doubleGap>9999.999999)
@@ -3112,7 +3112,7 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 				String S1=gaparray[inorm].concat(" ");
 				
 				totalnamearray[inorm]=	S1.concat(namearray[inorm]);
-
+				
 				//		IJ.log(String.valueOf(inorm)+"  "+totalnamearray[inorm]);
 			}
 			
@@ -3299,7 +3299,7 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 			//		impstack.close();
 			
 			String logtotal = IJ.getLog();
-		
+			
 			
 			ImagePlus newimp = null;
 			if(onematchingF==false)
