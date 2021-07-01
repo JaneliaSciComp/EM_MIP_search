@@ -56,22 +56,28 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 	String negativeradiusEM="10";
 	ExecutorService m_executor;
 	
-	boolean DUPlogonE;
+	boolean DUPlogonE,EMhemibrain;
 	
 	public class SearchResult{
 		String m_name;
 		int m_sid;
 		long m_offset;
+		int m_slice_offset;
 		int m_strip;
+		int[] m_strip_offsets;
+		int[] m_strip_lengths;
 		byte[] m_pixels;
 		byte[] m_colocs;
 		ImageProcessor m_iporg;
 		ImageProcessor m_ipcol;
-		SearchResult(String name, int sid, long offset, int strip, byte[] pxs, byte[] coloc, ImageProcessor iporg, ImageProcessor ipcol){
+		SearchResult(String name, int sid, long offset, int slice_offset, int strip, int[] strip_offsets, int[] strip_lengths, byte[] pxs, byte[] coloc, ImageProcessor iporg, ImageProcessor ipcol){
 			m_name = name;
 			m_sid = sid;
 			m_offset = offset;
+			m_slice_offset = slice_offset;
 			m_strip = strip;
+			m_strip_offsets = strip_offsets;
+			m_strip_lengths = strip_lengths;
 			m_pixels = pxs;
 			m_colocs = coloc;
 			m_iporg = iporg;
@@ -267,6 +273,7 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 		String showFlip=(String)Prefs.get("showFlip.String","None");
 		boolean maskiscom=(boolean)Prefs.get("maskiscom.boolean",false);
 		negativeradiusEM = (String)Prefs.get("negativeradiusEM.String","10");
+		EMhemibrain=(boolean)Prefs.get("EMhemibrain.boolean",false);
 		
 		if(datafileE >= imageno){
 			int singleslice=0; int Maxsingleslice=0; int MaxStack=0;
@@ -324,7 +331,7 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 		GenericDialog gd = new GenericDialog("EM_MIP_Mask search");
 		gd.addChoice("Mask", titles, titles[MaskE]); //MaskE
 		gd.addSlider("1.Threshold for mask", 0, 255, ThresmE);
-		gd.setInsets(0, 340, 0);
+		gd.setInsets(0, 310, 0);
 		gd.addCheckbox("1.Add mirror search", mirror_maskE);
 		
 		String []	com = {"ShowFlip hits on a same side (Not for commissure)", "ShowComissure matching (Bothside commissure)","None"};
@@ -332,27 +339,25 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 		gd.addRadioButtonGroup("Show special matching: ", com, 1, 3, showFlip);
 		
 		
-	//	gd.addCheckbox("ShowFlip hits on a same side", showFlip);
+		//	gd.addCheckbox("ShowFlip hits on a same side", showFlip);
 		
-	//	gd.addCheckbox("ShowComissure matching", maskiscom);
+		//	gd.addCheckbox("ShowComissure matching", maskiscom);
 		
 		
 		gd.setInsets(20, 0, 0);
 		gd.addChoice("Negative Mask", negtitles, negtitles[NegMaskE]); //Negative MaskE
 		gd.addSlider("2.Threshold for negative mask", 0, 255, NegThresmE);
-		gd.setInsets(0, 340, 0);
+		gd.setInsets(0, 310, 0);
 		gd.addCheckbox("2.Add mirror search", mirror_negmaskE);
 		
 		gd.setInsets(20, 0, 0);
 		gd.addChoice("EM_color_MIP Data for the search", titles, titles[datafileE]); //Data
 		
-		//gd.addNumericField("Threshold", slicenumber,0);
-		//	gd.addSlider("3.Threshold for data", 0, 255, ThresE);
-		//	gd.addMessage("");
-		//	gd.addSlider("100x % of Positive PX Threshold", (double) 0, (double) 10000, pixThresE);
+		gd.setInsets(20, 310, 0);// top, left, bottom
+		gd.addCheckbox("This is EM_hemibrain", EMhemibrain);
 		
 		String []	com2 = {"10","5"};//"ShowComissure matching (Bothside commissure)"
-		gd.setInsets(0, 180, 0);
+		gd.setInsets(0, 305, 0);
 		gd.addRadioButtonGroup("Negative score region radius: px ", com2, 1, 2, negativeradiusEM);
 		
 		gd.setInsets(20, 0, 0);
@@ -409,6 +414,7 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 		NegThresmE=(int)gd.getNextNumber();
 		mirror_negmaskE = gd.getNextBoolean();
 		datafileE = gd.getNextChoiceIndex(); //Color MIP
+		EMhemibrain = gd.getNextBoolean();
 		//	ThresE=(int)gd.getNextNumber();
 		
 		negativeradiusEM = (String)gd.getNextRadioButton();
@@ -504,6 +510,8 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 		Prefs.set("shownormal.boolean",shownormal);
 		Prefs.set("showFlip.String",showFlip);
 		Prefs.set("negativeradiusEM.String",negativeradiusEM);
+		Prefs.set("EMhemibrain.boolean", EMhemibrain);
+		
 		
 		
 		double pixfludub=pixfluE/100;
@@ -540,9 +548,17 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 			return;
 		}
 		
-		for(int ix=950; ix<width; ix++){// deleting color scale from mask
-			for(int iy=0; iy<85; iy++){
+		for(int ix=width-270; ix<width; ix++){// deleting color scale from mask
+			for(int iy=0; iy<90; iy++){
 				ip1.set(ix,iy,-16777216);
+			}
+		}
+		
+		if(width<height){// VNC
+			for(int ix=0; ix<291; ix++){// deleting color scale from mask
+				for(int iy=0; iy<90; iy++){
+					ip1.set(ix,iy,-16777216);
+				}
 			}
 		}
 		
@@ -622,98 +638,98 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 		final int flabelmethod = labelmethodE;
 		final boolean isPackbits = fileformat.equals("tif PackBits");
 		if(fileformat.equals("tif none") || fileformat.equals("tif PackBits")){
-		if (st3.isVirtual()) {
-			final VirtualStack vst = (VirtualStack)st3;
-			if (vst.getDirectory() == null) {
+			if (st3.isVirtual()) {
+				final VirtualStack vst = (VirtualStack)st3;
+				if (vst.getDirectory() == null) {
 					IJ.log("Virtual Stack (stack)");
 					
 					if (fileformat.equals("tif none")) {
-				final FileInfo fi = idata.getOriginalFileInfo();
-				if (fi.directory.length()>0 && !(fi.directory.endsWith(Prefs.separator)||fi.directory.endsWith("/")))
-				fi.directory += Prefs.separator;
-				final String datapath = fi.directory + fi.fileName;
-				final long size = fi.width*fi.height*fi.getBytesPerPixel();
-				
-				final List<Callable<ArrayList<SearchResult>>> tasks = new ArrayList<Callable<ArrayList<SearchResult>>>();
-				for (int ithread = 0; ithread < threadNumE; ithread++) {
-					final int ftid = ithread;
-					final int f_th_snum = fslicenum/fthreadnum;
-					tasks.add(new Callable<ArrayList<SearchResult>>() {
-							public ArrayList<SearchResult> call() {
-								ArrayList<SearchResult> out = new ArrayList<SearchResult>();
-								RandomAccessFile f = null;
-								try {
-									f = new RandomAccessFile(datapath, "r");
-									for (int slice = fslicenum/fthreadnum*ftid+1, count = 0; slice <= fslicenum && count < f_th_snum; slice++, count++) {
+						final FileInfo fi = idata.getOriginalFileInfo();
+						if (fi.directory.length()>0 && !(fi.directory.endsWith(Prefs.separator)||fi.directory.endsWith("/")))
+						fi.directory += Prefs.separator;
+						final String datapath = fi.directory + fi.fileName;
+						final long size = fi.width*fi.height*fi.getBytesPerPixel();
+						
+						final List<Callable<ArrayList<SearchResult>>> tasks = new ArrayList<Callable<ArrayList<SearchResult>>>();
+						for (int ithread = 0; ithread < threadNumE; ithread++) {
+							final int ftid = ithread;
+							final int f_th_snum = fslicenum/fthreadnum;
+							tasks.add(new Callable<ArrayList<SearchResult>>() {
+									public ArrayList<SearchResult> call() {
+										ArrayList<SearchResult> out = new ArrayList<SearchResult>();
+										RandomAccessFile f = null;
+										try {
+											f = new RandomAccessFile(datapath, "r");
+											for (int slice = fslicenum/fthreadnum*ftid+1, count = 0; slice <= fslicenum && count < f_th_snum; slice++, count++) {
 												if( IJ.escapePressed() )
 												break;
 												byte [] impxs = new byte[(int)size];
-										byte [] colocs = null;
-										if (fShowCo) colocs = new byte[(int)size];
-										
-										if (ftid == 0)
-										IJ.showProgress((double)slice/(double)f_th_snum);
-										
-										long loffset = fi.getOffset() + (slice-1)*(size+fi.gapBetweenImages) + maskpos_st;
-										f.seek(loffset);
-										f.read(impxs, maskpos_st, stripsize);
-										
-										linename=st3.getSliceLabel(slice);
-										
-										ColorMIPMaskCompare.Output res = cc.runSearch(impxs, colocs);
-										
-										int posi = res.matchingPixNum;
-										double posipersent = res.matchingPct;
-										
-										if(posipersent<=pixThresdub){
-											if (flogon==true && flogNan==true)
-											IJ.log("NaN");
-										}else if(posipersent>pixThresdub){
-											loffset = fi.getOffset() + (slice-1)*(size+fi.gapBetweenImages);
-											
-											double posipersent3=posipersent*100;
-											double pixThresdub3=pixThresdub*100;
-											
-											posipersent3 = posipersent3*100;
-											posipersent3 = Math.round(posipersent3);
-											double posipersent2 = posipersent3 /100;
-											
-											pixThresdub3 = pixThresdub3*100;
-											pixThresdub3 = Math.round(pixThresdub3);
-											
-											if(flogon==true && flogNan==true)// sort by name
-											IJ.log("Positive linename; 	"+linename+" 	"+String.valueOf(posipersent2));
-											
-											String title="";
-											if(fNumberSTint==0){
-												String numstr = getZeroFilledNumString(posipersent2, 3, 2);
-												title = (flabelmethod==0 || flabelmethod==1) ? numstr+"_"+linename : linename+"_"+numstr;
-											}else if(fNumberSTint==1){
-												String posiST=getZeroFilledNumString(posi, 4);
-												title = (flabelmethod==0 || flabelmethod==1) ? posiST+"_"+linename : linename+"_"+posiST;
+												byte [] colocs = null;
+												if (fShowCo) colocs = new byte[(int)size];
+												
+												if (ftid == 0)
+												IJ.showProgress((double)slice/(double)f_th_snum);
+												
+												long loffset = fi.getOffset() + (slice-1)*(size+fi.gapBetweenImages) + maskpos_st;
+												f.seek(loffset);
+												f.read(impxs, maskpos_st, stripsize);
+												
+												linename=st3.getSliceLabel(slice);
+												
+												ColorMIPMaskCompare.Output res = cc.runSearch(impxs, colocs);
+												
+												int posi = res.matchingPixNum;
+												double posipersent = res.matchingPct;
+												
+												if(posipersent<=pixThresdub){
+													if (flogon==true && flogNan==true)
+													IJ.log("NaN");
+												}else if(posipersent>pixThresdub){
+													loffset = fi.getOffset() + (slice-1)*(size+fi.gapBetweenImages);
+													
+													double posipersent3=posipersent*100;
+													double pixThresdub3=pixThresdub*100;
+													
+													posipersent3 = posipersent3*100;
+													posipersent3 = Math.round(posipersent3);
+													double posipersent2 = posipersent3 /100;
+													
+													pixThresdub3 = pixThresdub3*100;
+													pixThresdub3 = Math.round(pixThresdub3);
+													
+													if(flogon==true && flogNan==true)// sort by name
+													IJ.log("Positive linename; 	"+linename+" 	"+String.valueOf(posipersent2));
+													
+													String title="";
+													if(fNumberSTint==0){
+														String numstr = getZeroFilledNumString(posipersent2, 3, 2);
+														title = (flabelmethod==0 || flabelmethod==1) ? numstr+"_"+linename : linename+"_"+numstr;
+													}else if(fNumberSTint==1){
+														String posiST=getZeroFilledNumString(posi, 4);
+														title = (flabelmethod==0 || flabelmethod==1) ? posiST+"_"+linename : linename+"_"+posiST;
+													}
+													out.add(new SearchResult(title, slice, loffset, 0, 0, null, null, impxs, colocs, null, null));
+													if (ftid == 0)
+													IJ.showStatus("Number of Hits (estimated): "+out.size()*fthreadnum);
+												}
 											}
-													out.add(new SearchResult(title, slice, loffset, 0, impxs, colocs, null, null));
-											if (ftid == 0)
-											IJ.showStatus("Number of Hits (estimated): "+out.size()*fthreadnum);
+											f.close();
+										} catch (IOException e) {
+											e.printStackTrace();
+										} finally {
+											try { if (f != null) f.close(); }
+											catch  (IOException e) { e.printStackTrace(); }
 										}
+										return out;
 									}
-									f.close();
-								} catch (IOException e) {
-									e.printStackTrace();
-								} finally {
-									try { if (f != null) f.close(); }
-									catch  (IOException e) { e.printStackTrace(); }
-								}
-								return out;
-							}
-					});
-				}
-				try {
-					List<Future<ArrayList<SearchResult>>> taskResults = m_executor.invokeAll(tasks);
-					for (Future<ArrayList<SearchResult>> future : taskResults) {
-						for (SearchResult r : future.get()) {
-							srlabels.add(r.m_name);
-							srdict.put(r.m_name, r);
+							});
+						}
+						try {
+							List<Future<ArrayList<SearchResult>>> taskResults = m_executor.invokeAll(tasks);
+							for (Future<ArrayList<SearchResult>> future : taskResults) {
+								for (SearchResult r : future.get()) {
+									srlabels.add(r.m_name);
+									srdict.put(r.m_name, r);
 									int FLindex = r.m_name.lastIndexOf("_FL");
 									
 									//IJ.log("r.m_name; "+r.m_name);
@@ -721,12 +737,12 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 									if(FLindex!=-1)
 									FLpositive=FLpositive+1;
 									
-							posislice=posislice+1;
+									posislice=posislice+1;
+								}
+							}
+						} catch (Exception e) {
+							e.printStackTrace();
 						}
-					}
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
 					} else if (fileformat.equals("tif PackBits")) {
 						final FileInfo fi = idata.getOriginalFileInfo();
 						if (fi.directory.length()>0 && !(fi.directory.endsWith(Prefs.separator)||fi.directory.endsWith("/")))
@@ -817,7 +833,7 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 															String posiST=getZeroFilledNumString(posi, 4);
 															title = (flabelmethod==0 || flabelmethod==1) ? posiST+"_"+linename : linename+"_"+posiST;
 														}
-														out.add(new SearchResult(title, slice, loffset, stripid, impxs, colocs, null, null));
+														out.add(new SearchResult(title, slice, fioffset, (int)(loffset-fioffset), stripid, fi_list[slice].stripOffsets, fi_list[slice].stripLengths, impxs, colocs, null, null));
 														if (ftid == 0)
 														IJ.showStatus("Number of Hits (estimated): "+out.size()*fthreadnum);
 													}
@@ -852,15 +868,15 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 							e.printStackTrace();
 						}
 					}
-			} else {
-				
-				String dirtmp = vst.getDirectory();
-				IJ.log("Virtual Stack; "+dirtmp);
-				if (dirtmp.length()>0 && !(dirtmp.endsWith(Prefs.separator)||dirtmp.endsWith("/")))
-				dirtmp += Prefs.separator;
-				final String directory = dirtmp;
-				final long size = width*height*3;
-				final List<Callable<ArrayList<SearchResult>>> tasks = new ArrayList<Callable<ArrayList<SearchResult>>>();
+				} else {
+					
+					String dirtmp = vst.getDirectory();
+					IJ.log("Virtual Stack; "+dirtmp);
+					if (dirtmp.length()>0 && !(dirtmp.endsWith(Prefs.separator)||dirtmp.endsWith("/")))
+					dirtmp += Prefs.separator;
+					final String directory = dirtmp;
+					final long size = width*height*3;
+					final List<Callable<ArrayList<SearchResult>>> tasks = new ArrayList<Callable<ArrayList<SearchResult>>>();
 					
 					try {
 						String datapath = directory + vst.getFileName(1);
@@ -875,26 +891,26 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 					
 					
 					for (int ithread = 0; ithread < threadNumE; ithread++) {
-					final int ftid = ithread;
-					final int f_th_snum = fslicenum/fthreadnum;
-					tasks.add(new Callable<ArrayList<SearchResult>>() {
-							public ArrayList<SearchResult> call() {
-								ArrayList<SearchResult> out = new ArrayList<SearchResult>();
-								for (int slice = fslicenum/fthreadnum*ftid+1, count = 0; slice <= fslicenum && count < f_th_snum; slice++, count++) {
+						final int ftid = ithread;
+						final int f_th_snum = fslicenum/fthreadnum;
+						tasks.add(new Callable<ArrayList<SearchResult>>() {
+								public ArrayList<SearchResult> call() {
+									ArrayList<SearchResult> out = new ArrayList<SearchResult>();
+									for (int slice = fslicenum/fthreadnum*ftid+1, count = 0; slice <= fslicenum && count < f_th_snum; slice++, count++) {
 										if( IJ.escapePressed() )
 										break;
 										byte [] impxs = new byte[(int)size];
-									byte [] colocs = null;
-									if (fShowCo) colocs = new byte[(int)size];
-									String datapath = directory + vst.getFileName(slice);
-									
-									if (ftid == 0)
-									IJ.showProgress((double)slice/(double)f_th_snum);
-									
-									try {
-										TiffDecoder tfd = new TiffDecoder(directory, vst.getFileName(slice));
-										if (tfd == null) continue;
-										FileInfo[] fi_list = tfd.getTiffInfo();
+										byte [] colocs = null;
+										if (fShowCo) colocs = new byte[(int)size];
+										String datapath = directory + vst.getFileName(slice);
+										
+										if (ftid == 0)
+										IJ.showProgress((double)slice/(double)f_th_snum);
+										
+										try {
+											TiffDecoder tfd = new TiffDecoder(directory, vst.getFileName(slice));
+											if (tfd == null) continue;
+											FileInfo[] fi_list = tfd.getTiffInfo();
 											if (fi_list == null) continue;
 											RandomAccessFile f = new RandomAccessFile(datapath, "r");
 											
@@ -902,8 +918,8 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 											int stripid = 0;
 											if (!isPackbits) {
 												loffset = fi_list[0].getOffset();
-										f.seek(loffset+(long)maskpos_st);
-										f.read(impxs, maskpos_st, stripsize);
+												f.seek(loffset+(long)maskpos_st);
+												f.read(impxs, maskpos_st, stripsize);
 											} else {
 												int ioffset = 0;
 												for (int i=0; i<fi_list[0].stripOffsets.length; i++) {
@@ -925,73 +941,73 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 												}
 											}
 											
-										String linename = st3.getSliceLabel(slice);
-										
-										ColorMIPMaskCompare.Output res = cc.runSearch(impxs, colocs);
-										
-										int posi = res.matchingPixNum;
-										double posipersent = res.matchingPct;
-										
-										if(posipersent<=pixThresdub){
-											if (flogon==true && flogNan==true)
-											IJ.log("NaN");
-										}else if(posipersent>pixThresdub){
-											double posipersent3=posipersent*100;
-											double pixThresdub3=pixThresdub*100;
+											String linename = st3.getSliceLabel(slice);
 											
-											posipersent3 = posipersent3*100;
-											posipersent3 = Math.round(posipersent3);
-											double posipersent2 = posipersent3 /100;
+											ColorMIPMaskCompare.Output res = cc.runSearch(impxs, colocs);
 											
-											pixThresdub3 = pixThresdub3*100;
-											pixThresdub3 = Math.round(pixThresdub3);
+											int posi = res.matchingPixNum;
+											double posipersent = res.matchingPct;
 											
-											if(flogon==true && flogNan==true)// sort by name
-											IJ.log("Positive linename; 	"+linename+" 	"+String.valueOf(posipersent2));
-											
-											String title="";
-											if(fNumberSTint==0){
-												String numstr = getZeroFilledNumString(posipersent2, 3, 2);
-												title = (flabelmethod==0 || flabelmethod==1) ? numstr+"_"+linename : linename+"_"+numstr;
-											}else if(fNumberSTint==1) {
-												String posiST=getZeroFilledNumString(posi, 4);
-												title = (flabelmethod==0 || flabelmethod==1) ? posiST+"_"+linename : linename+"_"+posiST;
+											if(posipersent<=pixThresdub){
+												if (flogon==true && flogNan==true)
+												IJ.log("NaN");
+											}else if(posipersent>pixThresdub){
+												double posipersent3=posipersent*100;
+												double pixThresdub3=pixThresdub*100;
+												
+												posipersent3 = posipersent3*100;
+												posipersent3 = Math.round(posipersent3);
+												double posipersent2 = posipersent3 /100;
+												
+												pixThresdub3 = pixThresdub3*100;
+												pixThresdub3 = Math.round(pixThresdub3);
+												
+												if(flogon==true && flogNan==true)// sort by name
+												IJ.log("Positive linename; 	"+linename+" 	"+String.valueOf(posipersent2));
+												
+												String title="";
+												if(fNumberSTint==0){
+													String numstr = getZeroFilledNumString(posipersent2, 3, 2);
+													title = (flabelmethod==0 || flabelmethod==1) ? numstr+"_"+linename : linename+"_"+numstr;
+												}else if(fNumberSTint==1) {
+													String posiST=getZeroFilledNumString(posi, 4);
+													title = (flabelmethod==0 || flabelmethod==1) ? posiST+"_"+linename : linename+"_"+posiST;
+												}
+												out.add(new SearchResult(title, slice, loffset, (int)loffset, stripid, fi_list[0].stripOffsets, fi_list[0].stripLengths, impxs, colocs, null, null));
+												if (ftid == 0)
+												IJ.showStatus("Number of Hits (estimated): "+out.size()*fthreadnum);
 											}
-												out.add(new SearchResult(title, slice, loffset, stripid, impxs, colocs, null, null));
-											if (ftid == 0)
-											IJ.showStatus("Number of Hits (estimated): "+out.size()*fthreadnum);
-										}
-										f.close();
+											f.close();
 										} catch (IOException e) {
 											e.printStackTrace();			
-										continue;
+											continue;
+										}
 									}
+									return out;
 								}
-								return out;
-							}
-					});
-				}
-				try {
-					List<Future<ArrayList<SearchResult>>> taskResults = m_executor.invokeAll(tasks);
-					for (Future<ArrayList<SearchResult>> future : taskResults) {
-						for (SearchResult r : future.get()) {
-							srlabels.add(r.m_name);
-							srdict.put(r.m_name, r);
-							int FLindex = r.m_name.lastIndexOf("_FL");
-							
-							//			IJ.log("r.m_name; "+r.m_name);
-							
-							if(FLindex!=-1)
-							FLpositive=FLpositive+1;
-								
-								
-							posislice=posislice+1;
-						}
+						});
 					}
-				} catch (Exception e) {
-					e.printStackTrace();
+					try {
+						List<Future<ArrayList<SearchResult>>> taskResults = m_executor.invokeAll(tasks);
+						for (Future<ArrayList<SearchResult>> future : taskResults) {
+							for (SearchResult r : future.get()) {
+								srlabels.add(r.m_name);
+								srdict.put(r.m_name, r);
+								int FLindex = r.m_name.lastIndexOf("_FL");
+								
+								//			IJ.log("r.m_name; "+r.m_name);
+								
+								if(FLindex!=-1)
+								FLpositive=FLpositive+1;
+								
+								
+								posislice=posislice+1;
+							}
+						}
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
 				}
-			}
 				
 			}
 		} else {// if not virtual stack
@@ -1046,7 +1062,7 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 										String posiST=getZeroFilledNumString(posi, 4);
 										title = (flabelmethod==0 || flabelmethod==1) ? posiST+"_"+linename : linename+"_"+posiST;
 									}
-									out.add(new SearchResult(title, slice, 0L, 0, null, null, ip3, ipnew));
+									out.add(new SearchResult(title, slice, 0L, 0, 0, null, null, null, null, ip3, ipnew));
 									if (ftid == 0)
 									IJ.showStatus("Number of Hits (estimated): "+out.size()*fthreadnum);
 								}
@@ -1102,60 +1118,10 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 			for(int CreateLineArray=0; CreateLineArray<posislice; CreateLineArray++){
 				linenameTmpo = srlabels.get(CreateLineArray);
 				
-				int GMRPosi=(linenameTmpo.indexOf("GMR"));
-				int RPosi=(linenameTmpo.indexOf("R_"));
-				int TRposi=(linenameTmpo.indexOf("_TR_"));
-				
-				if(RPosi>9)
-				RPosi=-1;
-				
-				if(TRposi!=-1)
-				RPosi=-1;
-				
-				
-				int JRCPosi=(linenameTmpo.indexOf("JRC_"));
-				int BJDPosi=(linenameTmpo.indexOf("BJD"));
 				int DotPosi=(linenameTmpo.indexOf("."));
-				int VTPosi=(linenameTmpo.indexOf("VT"));
-				int SSPosi=(linenameTmpo.indexOf("SS"));
+
+				LineNo=linenameTmpo.substring(0, DotPosi);
 				
-				if(GMRPosi==-1 && RPosi==-1 && JRCPosi==-1 && BJDPosi==-1 && VTPosi==-1 && SSPosi==-1)
-				duplineE=0;
-				
-				if(JRCPosi!=-1)
-				RPosi=-1;
-				
-				if(RPosi!=-1 && GMRPosi==-1){// it is R
-					
-					int UnderS2=(linenameTmpo.indexOf("_", RPosi+2 ));// end of line number
-					
-					LineNo=linenameTmpo.substring(RPosi+2, UnderS2);// R_01A02
-				}else if(GMRPosi!=-1){// it is GMR 
-					int UnderS1=(linenameTmpo.indexOf("_", GMRPosi+1));
-					int UnderS2=(linenameTmpo.indexOf("_", UnderS1+1 ));// end of line number
-					
-					LineNo=linenameTmpo.substring(GMRPosi, UnderS2);// GMR_01A02
-				}else if(VTPosi!=-1){//if VT
-					int UnderS1=(linenameTmpo.indexOf("_", VTPosi+1));
-					LineNo=linenameTmpo.substring(VTPosi, UnderS1);// VT00002
-				}else if(JRCPosi!=-1){
-					int UnderS1=(linenameTmpo.indexOf("_", JRCPosi+1));
-					int UnderS2=(linenameTmpo.indexOf("_", UnderS1+1 ));
-					
-					LineNo=linenameTmpo.substring(JRCPosi, UnderS2);// GMR_01A02
-				}else if(BJDPosi!=-1){
-					int UnderS1=(linenameTmpo.indexOf("_", BJDPosi+1));
-					int UnderS2=(linenameTmpo.indexOf("_", UnderS1+1 ));
-					
-					LineNo=linenameTmpo.substring(BJDPosi, UnderS2);// GMR_01A02
-				}else if(SSPosi!=-1){
-					int UnderS1=(linenameTmpo.indexOf("_", SSPosi+1));
-					int UnderS2=(linenameTmpo.indexOf("_", UnderS1+1 ));
-					
-					LineNo=linenameTmpo.substring(SSPosi, UnderS2);// GMR_01A02		
-				}else{
-					LineNo=linenameTmpo.substring(0, DotPosi);
-				}
 				
 				String posipersent2ST;
 				if(labelmethodE==0 || labelmethodE==1){// on top score
@@ -1692,10 +1658,28 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 								byte[] impxs = sr.m_pixels;
 								long loffset = sr.m_offset;
 								
-								f.seek(loffset);
-								f.read(impxs, 0, maskpos_st);
-								f.seek(loffset+(long)maskpos_ed+3L);
-								f.read(impxs, maskpos_ed+3, impxs.length-maskpos_ed-3);
+								if (!isPackbits) {
+									f.seek(loffset);
+									f.read(impxs, 0, maskpos_st);
+									f.seek(loffset+(long)maskpos_ed+3L);
+									f.read(impxs, maskpos_ed+3, impxs.length-maskpos_ed-3);
+								} else {
+									long fioffset = loffset;
+									int ioffset = sr.m_slice_offset;
+									int stripid = sr.m_strip;
+									for (int i=stripid; i<sr.m_strip_offsets.length; i++) {
+										f.seek(fioffset + (long)sr.m_strip_offsets[i]);
+										byte[] byteArray = new byte[sr.m_strip_lengths[i]];
+										int read = 0, left = byteArray.length;
+										while (left > 0) {
+											int r = f.read(byteArray, read, left);
+											if (r == -1) break;
+											read += r;
+											left -= r;
+										}
+										ioffset = packBitsUncompress(byteArray, impxs, ioffset, 0);
+									}
+								}
 								for (int i = 0, id = 0; i < size; i+=3,id++) {
 									int red2 = impxs[i] & 0xff;
 									int green2 = impxs[i+1] & 0xff;
@@ -1736,10 +1720,28 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 									String datapath = directory + vst.getFileName(sliceid);
 									RandomAccessFile f = new RandomAccessFile(datapath, "r");
 									
-									f.seek(loffset);
-									f.read(impxs, 0, maskpos_st);
-									f.seek(loffset+(long)maskpos_ed+3L);
-									f.read(impxs, maskpos_ed+3, impxs.length-maskpos_ed-3);
+									if (!isPackbits) {
+										f.seek(loffset);
+										f.read(impxs, 0, maskpos_st);
+										f.seek(loffset+(long)maskpos_ed+3L);
+										f.read(impxs, maskpos_ed+3, impxs.length-maskpos_ed-3);
+									} else {
+										int stripid = sr.m_strip;
+										int ioffset = sr.m_slice_offset;
+										for (int i=stripid; i<sr.m_strip_offsets.length; i++) {
+											f.seek(sr.m_strip_offsets[i]);
+											byte[] byteArray = new byte[sr.m_strip_lengths[i]];
+											int read = 0, left = byteArray.length;
+											while (left > 0) {
+												int r = f.read(byteArray, read, left);
+												if (r == -1) break;
+												read += r;
+												left -= r;
+											}
+											ioffset = packBitsUncompress(byteArray, impxs, ioffset, 0);
+										}
+									}
+									
 									for (int i = 0, id = 0; i < size; i+=3,id++) {
 										int red2 = impxs[i] & 0xff;
 										int green2 = impxs[i+1] & 0xff;
@@ -2525,7 +2527,7 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 					}
 				}
 				
-				for(int ix=950; ix<WW; ix++){
+				for(int ix=WW-270; ix<WW; ix++){
 					for(int iy=0; iy<85; iy++){
 						
 						fillip.set(ix,iy,-16777216);
@@ -2540,21 +2542,21 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 			IJ.log("maskname; "+maskname);
 			final int test=1;
 			
-
+			
 			
 			
 			
 			ImageConverter ic = new ImageConverter(impgradientMask);
-			ic.convertToGray8();
+			ic.convertToGray16();
 			
 			ImageProcessor EightIMG = impgradientMask.getProcessor();
 			ImageProcessor IP10pxRGBmask = imp10pxRGBmask.getProcessor();
 			
-	
+			
 			final int sumpx= WW*HH;
 			for(int ipix=0; ipix<sumpx; ipix++){// 255 binary mask creation
 				if(EightIMG.get(ipix)>ThresmEf){
-					EightIMG.set(ipix, 255);
+					EightIMG.set(ipix, 65535);
 				}else
 				EightIMG.set(ipix, 0);
 				
@@ -2573,7 +2575,7 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 			//			impgradientMask.show();
 			//			return impgradientMask;
 			//		}
-		
+			
 			
 			IJ.run(impgradientMask,"Maximum...", "radius="+negativeradiusEM+"");
 			IJ.run(imp10pxRGBmask,"Maximum...", "radius="+negativeradiusEM+"");
@@ -2608,21 +2610,22 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 			}
 			
 			//// open gradient mask ////////////////////////////////
-			ImagePlus hemiMIPmask;
-			
-			File fMIP = new File(gradientDIRopen+"MAX_hemi_to_JRC2018U_fineTune.png");
-			if (!fMIP.exists()){
-				IJ.log("The file cannot open; "+gradientDIRopen+"MAX_hemi_to_JRC2018U_fineTune.png");
-				return impgradientMask;
+			ImagePlus hemiMIPmask=null;
+			ImageProcessor iphemiMIP=null;
+			if(EMhemibrain){
+				File fMIP = new File(gradientDIRopen+"MAX_hemi_to_JRC2018U_fineTune.png");
+				if (!fMIP.exists()){
+					IJ.log("The file cannot open; "+gradientDIRopen+"MAX_hemi_to_JRC2018U_fineTune.png");
+					return impgradientMask;
+					
+				}else{
+					
+					hemiMIPmask = IJ.openImage(gradientDIRopen+"MAX_hemi_to_JRC2018U_fineTune.png");
+					
+				}
 				
-			}else{
-				
-				hemiMIPmask = IJ.openImage(gradientDIRopen+"MAX_hemi_to_JRC2018U_fineTune.png");
-				
-			}
-			
-			ImageProcessor iphemiMIP = hemiMIPmask.getProcessor();
-			
+				iphemiMIP = hemiMIPmask.getProcessor();
+			}//	if(EMhemibrain){
 			
 			/// make flipped mask 10px dilated image ////////////////////////////
 			ImagePlus MaskFlipIMP = impgradientMask.duplicate();
@@ -2631,8 +2634,6 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 			ImageProcessor IPflip10pxRGBmask=RGBMaskFlipIMP.getProcessor();
 			
 			if(mirror_maskEF){
-		//		ipgradientFlipMask = DeleteOutSideMask(ipgradientFlipMask,iphemiMIP); // Flipped mask; delete out side of emptyhemibrain region
-		//		IPflip10pxRGBmask = DeleteOutSideMask(IPflip10pxRGBmask,iphemiMIP); // flipped RGBmask; delete out side of EM mask
 				
 				ipgradientFlipMask.flipHorizontal();
 				IPflip10pxRGBmask.flipHorizontal();// flipped RGBmask
@@ -2641,18 +2642,19 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 				//			MaskFlipIMP.show();
 				//			return impgradientMask; 
 				//		}
+				if(EMhemibrain){
+					EightIMG = DeleteOutSideMask(EightIMG,iphemiMIP); // delete out side of emptyhemibrain region
+					ipgradientFlipMask = DeleteOutSideMask(ipgradientFlipMask,iphemiMIP); // Flipped mask; delete out side of emptyhemibrain region
+					
+					IP10pxRGBmask = DeleteOutSideMask(IP10pxRGBmask,iphemiMIP); // RGBmask; delete out side of EM mask
+					IPflip10pxRGBmask = DeleteOutSideMask(IPflip10pxRGBmask,iphemiMIP); // flipped RGBmask; delete out side of EM mask
+				}//	if(EMhemibrain){
 				
-				EightIMG = DeleteOutSideMask(EightIMG,iphemiMIP); // delete out side of emptyhemibrain region
-				ipgradientFlipMask = DeleteOutSideMask(ipgradientFlipMask,iphemiMIP); // Flipped mask; delete out side of emptyhemibrain region
-				
-				IP10pxRGBmask = DeleteOutSideMask(IP10pxRGBmask,iphemiMIP); // RGBmask; delete out side of EM mask
-				IPflip10pxRGBmask = DeleteOutSideMask(IPflip10pxRGBmask,iphemiMIP); // flipped RGBmask; delete out side of EM mask
-				
-			//	if(test==1){
-			//		RGBMaskFlipIMP.show();// 
-			//		MaskFlipIMP.show();
-			//		return RGBMaskFlipIMP; 
-			//	}
+				//	if(test==1){
+				//		RGBMaskFlipIMP.show();// 
+				//		MaskFlipIMP.show();
+				//		return RGBMaskFlipIMP; 
+				//	}
 				
 				ic = new ImageConverter(impgradientMask);
 				ic.convertToGray16();
@@ -2676,11 +2678,11 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 				
 				ipgradientFlipMask=gradientslice(ipgradientFlipMask); // make Flip gradient mask, Flipped ver of 
 				
-		//			if(test==1){
+				//			if(test==1){
 				//		impgradientMask.show();// 
-		//				MaskFlipIMP.show();// 
-		//				return impgradientMask; 
-		//			}
+				//				MaskFlipIMP.show();// 
+				//				return impgradientMask; 
+				//			}
 			}else{//	if(mirror_maskEF){
 				
 				for(int ipix=0; ipix<sumpx; ipix++){// 255 binary mask creation, posi signal become 0 INV
@@ -2693,10 +2695,15 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 			}
 			EightIMG=gradientslice(EightIMG); // make gradient mask, EightIMG is 0 center & gradient mask of original mask 
 			
+		//	if(test==1){
+	//			impgradientMask.show();
+	//			return impgradientMask; 
+	//		}
+			
 			final ImagePlus impRGBMaskFlipfinal = RGBMaskFlipIMP;
 			final ImageProcessor IPflip10pxRGBmaskFinal = IPflip10pxRGBmask;
 			final ImageProcessor ipgradientFlipMaskFinal=ipgradientFlipMask;
-	//		impgradientMask.hide();
+			//		impgradientMask.hide();
 			
 			/// impgradientMask （フリップ）と EightIMG に z-distance の negative value を加える
 			
@@ -2709,6 +2716,8 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 			
 			Value1maskIMP = setsignal1(Value1maskIMP,sumpx);
 			ImageProcessor Value1maskip = Value1maskIMP.getProcessor();
+			
+			if(EMhemibrain)
 			Value1maskip = DeleteOutSideMask(Value1maskip,iphemiMIP); // delete out side of emptyhemibrain region
 			
 			final ImagePlus Value1maskIMPfinal = Value1maskIMP;
@@ -2722,18 +2731,25 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 			ImageProcessor ipFlipValue1mask =impFlipValue1mask.getProcessor();
 			
 			if(mirror_maskEF){
-				ipFlipValue1mask = DeleteOutSideMask(ipFlipValue1mask,iphemiMIP); // delete out side of emptyhemibrain region
-				ipFlipValue1mask.flipHorizontal();
+				
+				if(EMhemibrain)
 				ipFlipValue1mask = DeleteOutSideMask(ipFlipValue1mask,iphemiMIP); // delete out side of emptyhemibrain region
 				
-		//		if(test==1){
-		//			impFlipValue1mask.show();
-		//			return impFlipValue1mask;
-		//		}
+				ipFlipValue1mask.flipHorizontal();
+				
+				if(EMhemibrain)
+				ipFlipValue1mask = DeleteOutSideMask(ipFlipValue1mask,iphemiMIP); // delete out side of emptyhemibrain region
+				
+				//		if(test==1){
+				//			impFlipValue1mask.show();
+				//			return impFlipValue1mask;
+				//		}
 			}
 			
-			hemiMIPmask.unlock();
-			hemiMIPmask.close();
+			if(EMhemibrain){
+				hemiMIPmask.unlock();
+				hemiMIPmask.close();
+			}
 			
 			int [] info2= impstack.getDimensions();
 			
@@ -2903,18 +2919,18 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 							
 							ImagePlus impOriStackResult = new ImagePlus ("impOriStackResult.tif",originalresultstack.getProcessor(isli));// original stack slice
 							
-						//	if(test==1 && isli==6){
-						//		SLICEtifimp.show();
-						//		return;
-						//	}
+							//	if(test==1 && isli==6){
+							//		SLICEtifimp.show();
+							//		return;
+							//	}
 							
 							
 							SLICEtifimp = deleteMatchZandCreateZnegativeScoreIMG (SLICEtifimp,impOriStackResult,imp10pxRGBmaskfinal,sumpx);
 							
-						//	if(test==1  && isli==6){
-						//		SLICEtifimp.show();// 
-						//		return; 
-						//	}
+							//	if(test==1  && isli==6){
+							//		SLICEtifimp.show();// 
+							//		return; 
+							//	}
 							
 							long MaskToSample=sumPXmeasure(SLICEtifimp);
 							
@@ -2943,17 +2959,17 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 									
 								}// multiply slice and gradient mask
 								
-						//			if(test==1){
-						//				SLICEtifimpFlip.show();
-						//					return;
-						//			}
+								//			if(test==1){
+								//				SLICEtifimpFlip.show();
+								//					return;
+								//			}
 								
 								SLICEtifimpFlip = deleteMatchZandCreateZnegativeScoreIMG (SLICEtifimpFlip,impOriStackResult,impRGBMaskFlipfinal,sumpx);
 								
-						//		if(test==1 ){//&& isli==18
-						//			SLICEtifimpFlip.show();
-						//			return;
-						//		}
+								//		if(test==1 ){//&& isli==18
+								//			SLICEtifimpFlip.show();
+								//			return;
+								//		}
 								
 								MaskToSampleFlip=sumPXmeasure(SLICEtifimpFlip);
 								//		IJ.log("MaskToSampleFlip; "+MaskToSampleFlip);
@@ -2988,7 +3004,7 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 								File f = new File(gradientDIR+filename);
 								if (!f.exists()){
 									IJ.log("The file cannot open; "+gradientDIR+filename);
-							//		return;
+									//		return;
 									
 								}else{
 									
@@ -3007,7 +3023,7 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 							//			return; 
 							//		}
 							ImageProcessor ipforfunc2 = impSLICE2.getProcessor();
-						
+							
 							
 							//		if(test==1  && isli==1){
 							//			Value1maskIMPfinal.show();
@@ -3022,10 +3038,10 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 								ipforfunc2.set(ivx2, pix1*pix2);
 							}// multiply slice and gradient mask
 							
-					//		if(test==1  && isli==11){
-					//			impSLICE2.show();// 
-					//			return; 
-					//		}
+							//		if(test==1  && isli==11){
+							//			impSLICE2.show();// 
+							//			return; 
+							//		}
 							
 							ImagePlus originalmaskimpDup = impmask.duplicate();
 							
@@ -3071,11 +3087,11 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 								
 								//	IJ.run(impSLICE2F,"Flip Horizontally","");// Flip gradient opened EM mask
 								
-							//	if(test==1 && isli==11){
-							//		RGBstack10px.show();
+								//	if(test==1 && isli==11){
+								//		RGBstack10px.show();
 								//				impSLICE2F.show();
-							//		return;
-							//	}
+								//		return;
+								//	}
 								
 								ImageProcessor ipforfunc21 = impSLICE2F.getProcessor();
 								
@@ -3092,11 +3108,11 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 								SampleToMaskflip=sumPXmeasure(impSLICE2F);
 								
 								//		IJ.log("SampleToMaskflip; "+SampleToMaskflip);
-							//			if(test==1 && isli==6){
-							//				impFlipValue1mask.show();
-							//				impSLICE2F.show();
-							//				return;
-							//			}
+								//			if(test==1 && isli==6){
+								//				impFlipValue1mask.show();
+								//				impSLICE2F.show();
+								//				return;
+								//			}
 								
 								impSLICE2F.unlock();
 								impSLICE2F.close();
@@ -3203,8 +3219,8 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 			//Array.show(gaparray);
 			
 			int Finslice=PositiveStackSlice;
-		//	if(Finslice>maxnumberF)
-		//	Finslice=maxnumberF;
+			//	if(Finslice>maxnumberF)
+			//	Finslice=maxnumberF;
 			int [] fixedFL = new int [totalnamearray.length+1];
 			IJ.log("Finslice; "+Finslice+"   totalnamearray.length; "+totalnamearray.length);
 			
@@ -3263,8 +3279,8 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 									
 									if(targetName2.equals(oribodyIDtrue)){
 										
-							////			if(oribodyIDtrue.equals("517514142_RT_18U.tif"))
-								//		IJ.log(iscan+" targetName2; "+targetName2+"  oribodyIDtrue; "+oribodyIDtrue+"  ibodyID; "+ibodyID+"  arg2_0; "+arg2_0+"  targetScore; "+targetScore);
+										////			if(oribodyIDtrue.equals("517514142_RT_18U.tif"))
+										//		IJ.log(iscan+" targetName2; "+targetName2+"  oribodyIDtrue; "+oribodyIDtrue+"  ibodyID; "+ibodyID+"  arg2_0; "+arg2_0+"  targetScore; "+targetScore);
 										
 										//				IJ.log("targetName2; "+targetName2+"  oribodyIDtrue; "+oribodyIDtrue);
 										
@@ -3320,8 +3336,8 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 					if(arg2_0==Totalscore && arg2_0!=0){
 						slicename=arg2[1];
 						
-			//			if(slicename.equals("001.04_517514142_RT_18U.tif"))
-			//			IJ.log("slicename; "+slicename+"  Totalscore; "+Totalscore);
+						//			if(slicename.equals("001.04_517514142_RT_18U.tif"))
+						//			IJ.log("slicename; "+slicename+"  Totalscore; "+Totalscore);
 						
 						arg2_0=0;
 						totalnamearray[iscan]=String.valueOf(arg2[0])+" "+arg2[1];
@@ -3344,8 +3360,8 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 						
 						String [] slititle = totalnamearray[searchS-1].split(" ");
 						
-			//			if(slicename.equals("001.04_517514142_RT_18U.tif"))
-			//			IJ.log(String.valueOf (searchS));
+						//			if(slicename.equals("001.04_517514142_RT_18U.tif"))
+						//			IJ.log(String.valueOf (searchS));
 						//	if(slicename.equals("001.04_517514142_RT_18U.tif"))
 						//	IJ.log(searchS+" slititle[1]; "+slititle[1]+"   slicename"+slicename);
 						
@@ -3435,8 +3451,8 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 							
 							//	
 							
-					//		if(slicename.equals("001.04_517514142_RT_18U.tif"))
-					//		IJ.log(searchS+" slititle[1]; "+slititle[1]+"   slicename"+slicename+"  Finslice; "+Finslice);
+							//		if(slicename.equals("001.04_517514142_RT_18U.tif"))
+							//		IJ.log(searchS+" slititle[1]; "+slititle[1]+"   slicename"+slicename+"  Finslice; "+Finslice);
 							
 							if(slititle[1].equals(slicename)){
 								ImageProcessor hitslice = originalresultstack.getProcessor(searchS);//original search MIP stack
@@ -3456,8 +3472,8 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 								addedslice=addedslice+1;
 								totalnamearray[searchS-1]="0 NN";
 								
-					//			if(slicename.equals("001.04_517514142_RT_18U.tif"))
-					//			IJ.log("3037 savename2; "+savename2+"  fixedFL[searchS-1]; "+fixedFL[searchS-1]+"  searchS-1; "+searchS);
+								//			if(slicename.equals("001.04_517514142_RT_18U.tif"))
+								//			IJ.log("3037 savename2; "+savename2+"  fixedFL[searchS-1]; "+fixedFL[searchS-1]+"  searchS-1; "+searchS);
 								break;
 							}
 							//		addslice=1;
@@ -3469,8 +3485,8 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 						
 						String [] slititle = totalnamearray[searchS-1].split(" ");
 						
-					//	if(slicename.equals("001.04_517514142_RT_18U.tif"))
-					//	IJ.log(String.valueOf (searchS));
+						//	if(slicename.equals("001.04_517514142_RT_18U.tif"))
+						//	IJ.log(String.valueOf (searchS));
 						//	if(slicename.equals("001.04_517514142_RT_18U.tif"))
 						//	IJ.log(searchS+" slititle[1]; "+slititle[1]+"   slicename"+slicename);
 						
@@ -3486,8 +3502,8 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 							//	String savename=slititle[1].substring(0, FLindex)+"tif";
 							Newslicename=slititle[1].substring(underindex+1, FLindex)+".tif";
 							
-						//	if(slicename.equals("001.04_517514142_RT_18U.tif"))
-						//	IJ.log("Newslicename; "+Newslicename+"  fixedFL[searchS-1]; "+fixedFL[searchS-1]);
+							//	if(slicename.equals("001.04_517514142_RT_18U.tif"))
+							//	IJ.log("Newslicename; "+Newslicename+"  fixedFL[searchS-1]; "+fixedFL[searchS-1]);
 							
 							
 							if(fixedFL[searchS-1]==-1){// does not have the bodyIDfile open
@@ -3520,8 +3536,8 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 										hitslice.drawString("Flip",WW/2-24,40,Color.white);
 									}
 									
-							//		if(slicename.equals("001.04_517514142_RT_18U.tif"))
-						//			IJ.log("2975 searchS; "+searchS+"  Newslicename; "+Newslicename);
+									//		if(slicename.equals("001.04_517514142_RT_18U.tif"))
+									//			IJ.log("2975 searchS; "+searchS+"  Newslicename; "+Newslicename);
 									
 									Stackfinal.addSlice(ADD0+inew+"_"+gaparray[inew].substring(0,gaparray[inew].indexOf("."))+"_"+savename, hitslice);
 									//		IJ.log("2993 savename; "+savename);
@@ -3556,8 +3572,8 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 							
 							//	
 							
-					//		if(slicename.equals("001.04_517514142_RT_18U.tif"))
-					//		IJ.log(searchS+" slititle[1]; "+slititle[1]+"   slicename"+slicename+"  Finslice; "+Finslice);
+							//		if(slicename.equals("001.04_517514142_RT_18U.tif"))
+							//		IJ.log(searchS+" slititle[1]; "+slititle[1]+"   slicename"+slicename+"  Finslice; "+Finslice);
 							
 							if(slititle[1].equals(slicename)){
 								ImageProcessor hitslice = originalresultstack.getProcessor(searchS);//original search MIP stack
@@ -3577,8 +3593,8 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 								addedslice=addedslice+1;
 								
 								totalnamearray[searchS-1]="0 NN";
-				//				if(slicename.equals("001.04_517514142_RT_18U.tif"))
-				//				IJ.log("3037 savename2; "+savename2+"  fixedFL[searchS-1]; "+fixedFL[searchS-1]+"  searchS-1; "+searchS);
+								//				if(slicename.equals("001.04_517514142_RT_18U.tif"))
+								//				IJ.log("3037 savename2; "+savename2+"  fixedFL[searchS-1]; "+fixedFL[searchS-1]+"  searchS-1; "+searchS);
 								break;
 							}
 							//		addslice=1;
@@ -3597,8 +3613,8 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 			MaskFlipIMP.hide();
 			MaskFlipIMP.close();
 			
-	//		for(int ipri=0; ipri<=Finslice; ipri++)
-	//		IJ.log(totalnamearray[ipri]+"  "+ipri);
+			//		for(int ipri=0; ipri<=Finslice; ipri++)
+			//		IJ.log(totalnamearray[ipri]+"  "+ipri);
 			
 			//		impstack.unlock();
 			//		impstack.hide();

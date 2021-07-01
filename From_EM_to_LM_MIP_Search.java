@@ -46,7 +46,7 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 	ImagePlus imp, imp2;
 	ImageProcessor ip1, nip1, ip2, ip3, ip4, ip5, ip6, ip33;
 	int pix1=0, CheckPost,UniqueLineName=0,IsPosi,threadNumE=0,FLpositive=0;
-	int pix3=0,Check=0,arrayPosition=0,dupdel=1,FinalAdded=1,enddup=0,unwantednum=0;
+	int pix3=0,Check=0,arrayPosition=0,dupdel=1,FinalAdded=1,enddup=0;
 	ImagePlus newimp, newimpOri;
 	String linename,LineNo, LineNo2,preLineNo="A",FullName,LineName,arrayName,PostName,negativeradius="";
 	String args [] = new String[10],PreFullLineName,ScorePre,TopShortLinename;
@@ -59,16 +59,22 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 		String m_name;
 		int m_sid;
 		long m_offset;
+		int m_slice_offset;
 		int m_strip;
+		int[] m_strip_offsets;
+		int[] m_strip_lengths;
 		byte[] m_pixels;
 		byte[] m_colocs;
 		ImageProcessor m_iporg;
 		ImageProcessor m_ipcol;
-		SearchResult(String name, int sid, long offset, int strip, byte[] pxs, byte[] coloc, ImageProcessor iporg, ImageProcessor ipcol){
+		SearchResult(String name, int sid, long offset, int slice_offset, int strip, int[] strip_offsets, int[] strip_lengths, byte[] pxs, byte[] coloc, ImageProcessor iporg, ImageProcessor ipcol){
 			m_name = name;
 			m_sid = sid;
 			m_offset = offset;
+			m_slice_offset = slice_offset;
 			m_strip = strip;
+			m_strip_offsets = strip_offsets;
+			m_strip_lengths = strip_lengths;
 			m_pixels = pxs;
 			m_colocs = coloc;
 			m_iporg = iporg;
@@ -263,9 +269,10 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 		boolean shownormal=(boolean)Prefs.get("shownormal.boolean",false);
 		String showFlip=(String)Prefs.get("showFlip.String","None");
 		boolean maskiscom=(boolean)Prefs.get("maskiscom.boolean",false);
-		negativeradius = (String)Prefs.get("negativeradius.String","20");
+		negativeradius = (String)Prefs.get("negativeradius.String","10");
 		boolean onematching=(boolean)Prefs.get("onematching.boolean",false);
-		unwantednum = (int)Prefs.get("unwantednum.int",1);
+		
+		onematching=false;
 		
 		if(datafileE >= imageno){
 			int singleslice=0; int Maxsingleslice=0; int MaxStack=0;
@@ -324,11 +331,11 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 		GenericDialog gd = new GenericDialog("From_EM_to_LM_MIP_Mask search");
 		gd.addChoice("Mask", titles, titles[MaskE]); //MaskE
 		gd.addSlider("1.Threshold for mask", 0, 255, ThresmE);
-		gd.setInsets(0, 467, 0);//308
+		gd.setInsets(0, 340, 0);
 		gd.addCheckbox("1.Add mirror search", mirror_maskE);
 		
 		String []	com = {"ShowFlip hits on a same side (Not for commissure)","None"};//"ShowComissure matching (Bothside commissure)"
-		gd.setInsets(0, 458, 0);
+		gd.setInsets(0, 180, 0);
 		gd.addRadioButtonGroup("Show special matching: ", com, 1, 2, showFlip);
 		
 		
@@ -341,7 +348,7 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 		gd.addChoice("Negative Mask", negtitles, negtitles[NegMaskE]); //Negative MaskE
 		gd.addSlider("2.Threshold for negative mask", 0, 255, NegThresmE);
 		gd.setInsets(0, 340, 0);
-		//	gd.addCheckbox("2.Add mirror search", mirror_negmaskE);
+		gd.addCheckbox("2.Add mirror search", mirror_negmaskE);
 		
 		gd.setInsets(20, 0, 0);
 		gd.addChoice("LM_color_MIP Data for the search", titles, titles[datafileE]); //Data
@@ -352,14 +359,8 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 		//	gd.addSlider("100x % of Positive PX Threshold", (double) 0, (double) 10000, pixThresE);
 		
 		String []	com2 = {"20","10","5"};//"ShowComissure matching (Bothside commissure)"
-		gd.setInsets(30, 460, 0);		
-		//		gd.setInsets(0, 180, 0);
+		gd.setInsets(0, 180, 0);
 		gd.addRadioButtonGroup("Negative score region radius: px ", com2, 1, 2, negativeradius);
-		
-		
-		//	gd.setInsets(0, 300, 0);
-		String []	unwanted = {"2","3","4","5"};
-		gd.addChoice("Dividing value of unwanted GAL4 expression score; less number is heavier", unwanted, unwanted[unwantednum]); //Data
 		
 		gd.setInsets(20, 0, 0);
 		gd.addNumericField("Positive PX % Threshold: matching is 1.5-3%", pixThresE, 4);
@@ -368,11 +369,11 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 		gd.setInsets(20, 0, 0);
 		gd.addStringField("Gradient file path: ", gradientDIR_MCFO,50);
 		
-		gd.setInsets(20, 467, 0);// top, left, bottom
+		gd.setInsets(20, 220, 0);// top, left, bottom
 		gd.addCheckbox("Show Normal_MIP_search_result before the shape matching", shownormal);
 		
 		//	gd.setInsets(20, 220, 0);// top, left, bottom
-		//		gd.addCheckbox("1vs1 matching", onematching);
+		//	gd.addCheckbox("1vs1 matching", onematching);
 		//		gd.addCheckbox("GradientOnTheFly; (slower with ON)",GradientOnTheFly_);
 		gd.setInsets(20, 0, 0);
 		gd.addNumericField("Max number of the hits", maxnumber, 0);
@@ -416,17 +417,11 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 		
 		NegMaskE = gd.getNextChoiceIndex(); //Negative MaskE
 		NegThresmE=(int)gd.getNextNumber();
-		
-		mirror_negmaskE=false;
-		if(mirror_maskE==true)
-		mirror_negmaskE=true;
-		
+		mirror_negmaskE = gd.getNextBoolean();
 		datafileE = gd.getNextChoiceIndex(); //Color MIP
 		ThresE=(int)gd.getNextNumber();
 		
 		negativeradius = (String)gd.getNextRadioButton();
-		unwantednum= gd.getNextChoiceIndex();
-		
 		pixThresE=(double)gd.getNextNumber();
 		pixfluE=(double)gd.getNextNumber();
 		gradientDIR_MCFO=gd.getNextString();
@@ -522,7 +517,6 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 		Prefs.set("onematching.boolean",onematching);
 		Prefs.set("showFlip.String",showFlip);
 		Prefs.set("negativeradius.String",negativeradius);
-		Prefs.set("unwantednum.int",unwantednum);
 		
 		
 		double pixfludub=pixfluE/100;
@@ -559,13 +553,19 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 			return;
 		}
 		
-		for(int ix=950; ix<width; ix++){// deleting color scale from mask
-			for(int iy=0; iy<85; iy++){
+		for(int ix=width-270; ix<width; ix++){// deleting color scale from mask
+			for(int iy=0; iy<90; iy++){
 				ip1.set(ix,iy,-16777216);
 			}
 		}
 		
-		
+		if(width<height){// VNC
+			for(int ix=0; ix<291; ix++){// deleting String from mask
+				for(int iy=0; iy<90; iy++){
+					ip1.set(ix,iy,-16777216);
+				}
+			}
+		}
 		
 		if(IJ.escapePressed())
 		return;
@@ -709,12 +709,11 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 													if(fNumberSTint==0){
 														String numstr = getZeroFilledNumString(posipersent2, 3, 2);
 														title = (flabelmethod==0 || flabelmethod==1) ? numstr+"_"+linename : linename+"_"+numstr;
-													}
-													else if(fNumberSTint==1){
+													}else if(fNumberSTint==1){
 														String posiST=getZeroFilledNumString(posi, 4);
 														title = (flabelmethod==0 || flabelmethod==1) ? posiST+"_"+linename : linename+"_"+posiST;
 													}
-													out.add(new SearchResult(title, slice, loffset, 0, impxs, colocs, null, null));
+													out.add(new SearchResult(title, slice, loffset, 0, 0, null, null, impxs, colocs, null, null));
 													if (ftid == 0)
 													IJ.showStatus("Number of Hits (estimated): "+out.size()*fthreadnum);
 												}
@@ -839,7 +838,7 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 															String posiST=getZeroFilledNumString(posi, 4);
 															title = (flabelmethod==0 || flabelmethod==1) ? posiST+"_"+linename : linename+"_"+posiST;
 														}
-														out.add(new SearchResult(title, slice, loffset, stripid, impxs, colocs, null, null));
+														out.add(new SearchResult(title, slice, fioffset, (int)(loffset-fioffset), stripid, fi_list[slice].stripOffsets, fi_list[slice].stripLengths, impxs, colocs, null, null));
 														if (ftid == 0)
 														IJ.showStatus("Number of Hits (estimated): "+out.size()*fthreadnum);
 													}
@@ -975,12 +974,11 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 												if(fNumberSTint==0){
 													String numstr = getZeroFilledNumString(posipersent2, 3, 2);
 													title = (flabelmethod==0 || flabelmethod==1) ? numstr+"_"+linename : linename+"_"+numstr;
-												}
-												else if(fNumberSTint==1) {
+												}else if(fNumberSTint==1) {
 													String posiST=getZeroFilledNumString(posi, 4);
 													title = (flabelmethod==0 || flabelmethod==1) ? posiST+"_"+linename : linename+"_"+posiST;
 												}
-												out.add(new SearchResult(title, slice, loffset, stripid, impxs, colocs, null, null));
+												out.add(new SearchResult(title, slice, loffset, (int)loffset, stripid, fi_list[0].stripOffsets, fi_list[0].stripLengths, impxs, colocs, null, null));
 												if (ftid == 0)
 												IJ.showStatus("Number of Hits (estimated): "+out.size()*fthreadnum);
 											}
@@ -1002,7 +1000,7 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 								srdict.put(r.m_name, r);
 								int FLindex = r.m_name.lastIndexOf("_FL");
 								
-								//IJ.log("r.m_name; "+r.m_name);
+								//			IJ.log("r.m_name; "+r.m_name);
 								
 								if(FLindex!=-1)
 								FLpositive=FLpositive+1;
@@ -1069,7 +1067,7 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 										String posiST=getZeroFilledNumString(posi, 4);
 										title = (flabelmethod==0 || flabelmethod==1) ? posiST+"_"+linename : linename+"_"+posiST;
 									}
-									out.add(new SearchResult(title, slice, 0L, 0, null, null, ip3, ipnew));
+									out.add(new SearchResult(title, slice, 0L, 0, 0, null, null, null, null, ip3, ipnew));
 									if (ftid == 0)
 									IJ.showStatus("Number of Hits (estimated): "+out.size()*fthreadnum);
 								}
@@ -1128,9 +1126,11 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 				int GMRPosi=(linenameTmpo.indexOf("GMR"));
 				int RPosi=(linenameTmpo.indexOf("R_"));
 				int TRposi=(linenameTmpo.indexOf("_TR_"));
+				int GLposi=(linenameTmpo.indexOf("GL_"));
 				
 				if(TRposi!=-1)
 				RPosi=-1;
+				
 				
 				int JRCPosi=(linenameTmpo.indexOf("JRC_"));
 				int BJDPosi=(linenameTmpo.indexOf("BJD"));
@@ -1145,7 +1145,7 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 				RPosi=-1;
 				
 				if(RPosi!=-1 && GMRPosi==-1){// it is R
-					//	IJ.log(linenameTmpo);
+					
 					int UnderS2=(linenameTmpo.indexOf("_", RPosi+2 ));// end of line number
 					
 					LineNo=linenameTmpo.substring(RPosi+2, UnderS2);// R_01A02
@@ -1154,6 +1154,12 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 					int UnderS2=(linenameTmpo.indexOf("_", UnderS1+1 ));// end of line number
 					
 					LineNo=linenameTmpo.substring(GMRPosi, UnderS2);// GMR_01A02
+				}else if(GLposi!=-1){// it is GMR 
+					int UnderS1=(linenameTmpo.indexOf("_", GLposi+1));
+					int UnderS2=(linenameTmpo.indexOf("_", UnderS1+1 ));// end of line number
+					
+					LineNo=linenameTmpo.substring(GLposi, UnderS2);// GMR_01A02
+					IJ.log("LineNo; "+LineNo);
 				}else if(VTPosi!=-1){//if VT
 					int UnderS1=(linenameTmpo.indexOf("_", VTPosi+1));
 					LineNo=linenameTmpo.substring(VTPosi, UnderS1);// VT00002
@@ -1207,7 +1213,7 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 				for(int LineInt=0; LineInt<posislice; LineInt++)
 				
 				if(DUPlogonE==true)
-				IJ.log(LineInt+"  "+LineNameArray[LineInt]);
+				//		IJ.log(LineInt+"  "+LineNameArray[LineInt]);
 				
 				for(int Fposi=0; Fposi<=posislice; Fposi++){
 					
@@ -1684,7 +1690,7 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 			ImageStack dcStackfinal = new ImageStack (width,height);
 			ImageStack OrigiStackfinal = new ImageStack (width,height);
 			//	VirtualStack OrigiStackfinal = new VirtualStack (width,height);
-			int slnum =0;
+			int slnum = 0;
 			try {
 				long size = width*height*3;
 				slnum = finallbs.size();
@@ -1713,11 +1719,28 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 									byte[] impxs = sr.m_pixels;
 									long loffset = sr.m_offset;
 									
-									f.seek(loffset);
-									f.read(impxs, 0, maskpos_st);
-									f.seek(loffset+(long)maskpos_ed+3L);
-									f.read(impxs, maskpos_ed+3, impxs.length-maskpos_ed-3);
-									
+									if (!isPackbits) {
+										f.seek(loffset);
+										f.read(impxs, 0, maskpos_st);
+										f.seek(loffset+(long)maskpos_ed+3L);
+										f.read(impxs, maskpos_ed+3, impxs.length-maskpos_ed-3);
+									} else {
+										long fioffset = loffset;
+										int ioffset = sr.m_slice_offset;
+										int stripid = sr.m_strip;
+										for (int i=stripid; i<sr.m_strip_offsets.length; i++) {
+											f.seek(fioffset + (long)sr.m_strip_offsets[i]);
+											byte[] byteArray = new byte[sr.m_strip_lengths[i]];
+											int read = 0, left = byteArray.length;
+											while (left > 0) {
+												int r = f.read(byteArray, read, left);
+												if (r == -1) break;
+												read += r;
+												left -= r;
+											}
+											ioffset = packBitsUncompress(byteArray, impxs, ioffset, 0);
+										}
+									}
 									for (int i = 0, id = 0; i < size; i+=3,id++) {
 										int red2 = impxs[i] & 0xff;
 										int green2 = impxs[i+1] & 0xff;
@@ -1758,21 +1781,17 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 										String datapath = directory + vst.getFileName(sliceid);
 										RandomAccessFile f = new RandomAccessFile(datapath, "r");
 										
-										if (fileformat.equals("tif none")) {
+										if (!isPackbits) {
 											f.seek(loffset);
 											f.read(impxs, 0, maskpos_st);
 											f.seek(loffset+(long)maskpos_ed+3L);
 											f.read(impxs, maskpos_ed+3, impxs.length-maskpos_ed-3);
-										} else if (maskpos_ed < size) {
-											TiffDecoder tfd = new TiffDecoder(directory, vst.getFileName(sliceid));
-											if (tfd == null) continue;
-											FileInfo[] fi_list = tfd.getTiffInfo();
-											if (fi_list == null) continue;
+										} else {
 											int stripid = sr.m_strip;
-											int ioffset = (int)loffset;
-											for (int i=stripid; i<fi_list[0].stripOffsets.length; i++) {
-												f.seek(fi_list[0].stripOffsets[i]);
-												byte[] byteArray = new byte[fi_list[0].stripLengths[i]];
+											int ioffset = sr.m_slice_offset;
+											for (int i=stripid; i<sr.m_strip_offsets.length; i++) {
+												f.seek(sr.m_strip_offsets[i]);
+												byte[] byteArray = new byte[sr.m_strip_lengths[i]];
 												int read = 0, left = byteArray.length;
 												while (left > 0) {
 													int r = f.read(byteArray, read, left);
@@ -2531,7 +2550,7 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 	
 	ImagePlus CDM_area_measure (ImagePlus impstack, final ImagePlus impmask, final String gradientDIR, final boolean rungradientonthefly, final int ThresmEf, final int maxnumberF,final boolean mirror_maskEF, String showFlipF, final int threadNumEF, int FLpositiveF, ImageStack st3F, int slicenumberF, final boolean onematchingF){
 		
-		final int unwantednumF=unwantednum;
+		
 		int Threval=0; int stackslicenum=0;
 		
 		int wList [] = WindowManager.getIDList();
@@ -2873,11 +2892,11 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 							
 							ImageProcessor ipforfunc2 = impSLICE2.getProcessor();
 							
-							//		if(test==1  && isli==1){
-							//			Value1maskIMPfinal.show();
-							//			impSLICE2.show();// 
-							//			return; 
-							//		}
+						//			if(test==1  && isli==1){
+						//				Value1maskIMPfinal.show();
+						//				impSLICE2.show();// 
+						//				return; 
+						//			}
 							
 							for(int ivx2=0; ivx2<sumpx; ivx2++){//multiply images
 								int pix1 = ipforfunc2.get(ivx2);//LM neuron gradient
@@ -2927,9 +2946,8 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 							
 							//	if(test==1 && isli==2)
 							//	IJ.log("z gap negative score slice2; "+SampleToMask+"  surrounding px toomuchexpression/3; "+toomuchexpression/3);
-							int divid = unwantednumF+2;
 							
-							SampleToMask=SampleToMask+(toomuchexpression/divid);
+							SampleToMask=SampleToMask+(toomuchexpression/3);
 							
 							//			if(test==1 && isli==5)
 							//		IJ.log("SampleToMask; "+SampleToMask);
@@ -2997,16 +3015,16 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 								}
 								
 								if(test==1 && isli==2)
-								IJ.log(" "+isli+"SampleToMaskflip; "+SampleToMaskflip+"  toomuchexpressionF/"+divid+"; "+toomuchexpressionF/divid);
+								IJ.log(" "+isli+"SampleToMaskflip; "+SampleToMaskflip+"  toomuchexpressionF/3; "+toomuchexpressionF/3);
 								
-								SampleToMaskflip=SampleToMaskflip+(toomuchexpressionF/divid);
+								SampleToMaskflip=SampleToMaskflip+(toomuchexpressionF/3);
 								
-								//	IJ.log("SampleToMaskflip; "+SampleToMaskflip);
-								//				if(test==1 && isli==15){
-								//	impgradient0.show();
-								//	impSLICE2F.show();
-								//		return ;
-								//	}
+							//		IJ.log("SampleToMaskflip; "+SampleToMaskflip);
+							//					if(test==1 && isli==1){
+							//		impgradient0.show();
+						//			impSLICE2F.show();
+						//		return;
+						//			}
 								impSLICE2F.unlock();
 								impSLICE2F.close();
 								
