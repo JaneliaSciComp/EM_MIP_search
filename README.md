@@ -9,9 +9,8 @@ FIJI plugins created by Hideo Otsuna and Takashi Kawase.
 
 ## Startup
 Download EM datdaset: (https://www.janelia.org/open-science/color-depth-mip)<br/><br/>
-  • EM_Hemibrain11_0630_2020_radi2_PackBits_noNeuronName.zip, The EM CDM does not have neuron name on their file name. It also containeds gradient files for neuron shape matching.<br/><br/>
-  • EM_Hemibrain11_0630_2020_radi2_PackBits_withNeuronName.zip, The EM CDM has neuron name on their file name. It can search neuron by file browser. It also containeds gradient files for neuron shape matching.<br/><br/>
-  • Hemibrain1.1_SWC_Skeleton.zip: SWC files, open with [VVDviewer.](https://github.com/takashi310/VVD_Viewer/releases)<br/><br/>
+  • EM_Hemibrain_Ver1.2_CDM_PackBits_gradient.zip, The EM CDM has neuron name on their file name. It can search neuron by file browser. It also containeds gradient files for neuron shape matching.<br/><br/>
+  • EM_Hemibrain1.2_SWC.zip: SWC files, open with [VVDviewer.](https://github.com/takashi310/VVD_Viewer/releases)<br/><br/>
 
  
 
