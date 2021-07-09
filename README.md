@@ -4,7 +4,7 @@ FIJI plugins created by Hideo Otsuna and Takashi Kawase.
 
 ## Before starting
  1. Launch and update FIJI.
- 2. Drag and drop `EM_MIP_Search.jar` and 'Max_Filter2D.jar' on FIJI then quit (the plugin installation).  
+ 2. Drag and drop `EM_MIP_Search.jar` on FIJI then quit (the plugin installation).  
 	(you can get the .jar file from [here](https://github.com/JaneliaSciComp/EM_MIP_Search/blob/master/EM_MIP_Mask_Search.jar)) 
 
 ## Startup
