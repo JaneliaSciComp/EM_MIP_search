@@ -3188,17 +3188,15 @@ public class EM_MIP_Mask_Search implements PlugInFilter
 				
 				//	IJ.log(inorm+1+"   normAreaPercent; "+normAreaPercent+"  normScorePercent[inorm]; "+normScorePercent[inorm]+"  doubleGap; "+doubleGap);
 				
-				String addST="_";
-				if(doubleGap<100000 && doubleGap>9999.999999)
-				addST=addST.replace("_","0");
-				else if(doubleGap<10000 && doubleGap>999.999999)
-				addST=addST.replace("_","00");
+				String addST="";
+				if(doubleGap<10000 && doubleGap>999.999999)
+				addST=("0");
 				else if(doubleGap<1000 && doubleGap>99.999999)
-				addST=addST.replace("_","000");
+				addST=("00");
 				else if(doubleGap<100 && doubleGap>9.999999)
-				addST=addST.replace("_","0000");
+				addST=("000");
 				else if(doubleGap<10)
-				addST=addST.replace("_","00000");
+				addST=("0000");
 				
 				String finalpercent=String.format("%.10f",(normScorePercent[inorm]/normAreaPercent)*100);
 				

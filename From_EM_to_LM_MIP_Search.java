@@ -707,7 +707,7 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 													
 													String title="";
 													if(fNumberSTint==0){
-														String numstr = getZeroFilledNumString(posipersent2, 3, 2);
+														String numstr = getZeroFilledNumString(posipersent2, 2, 2);
 														title = (flabelmethod==0 || flabelmethod==1) ? numstr+"_"+linename : linename+"_"+numstr;
 													}else if(fNumberSTint==1){
 														String posiST=getZeroFilledNumString(posi, 4);
@@ -1123,64 +1123,55 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 			for(int CreateLineArray=0; CreateLineArray<posislice; CreateLineArray++){
 				linenameTmpo = srlabels.get(CreateLineArray);
 				
-				int GMRPosi=(linenameTmpo.indexOf("GMR"));
-				int RPosi=(linenameTmpo.indexOf("R_"));
-				int TRposi=(linenameTmpo.indexOf("_TR_"));
-				int GLposi=(linenameTmpo.indexOf("GL_"));
+				int LineBeginIndex=(linenameTmpo.indexOf("MB"));
+				if(LineBeginIndex==-1)
+				LineBeginIndex=(linenameTmpo.indexOf("GMR"));
+				if(LineBeginIndex==-1)
+				LineBeginIndex=(linenameTmpo.indexOf("VT"));
+				if(LineBeginIndex==-1)
+				LineBeginIndex=(linenameTmpo.indexOf("JRC_"));
+				if(LineBeginIndex==-1)
+				LineBeginIndex=(linenameTmpo.indexOf("_TR_"));
+				if(LineBeginIndex==-1)
+				LineBeginIndex=(linenameTmpo.indexOf("R_"));
+				if(LineBeginIndex==-1)
+				LineBeginIndex=(linenameTmpo.indexOf("GL_"));
+				if(LineBeginIndex==-1)
+				LineBeginIndex=(linenameTmpo.indexOf("TDC"));
+				if(LineBeginIndex==-1)
+				LineBeginIndex=(linenameTmpo.indexOf("JHS"));
+				if(LineBeginIndex==-1)
+				LineBeginIndex=(linenameTmpo.indexOf("BJD"));
+				if(LineBeginIndex==-1)
+				LineBeginIndex=(linenameTmpo.indexOf("SS"));
+				if(LineBeginIndex==-1)
+				LineBeginIndex=(linenameTmpo.indexOf("UAH"));
+				if(LineBeginIndex==-1)
+				LineBeginIndex=(linenameTmpo.indexOf("OL"));
 				
-				if(TRposi!=-1)
-				RPosi=-1;
-				
-				
-				int JRCPosi=(linenameTmpo.indexOf("JRC_"));
-				int BJDPosi=(linenameTmpo.indexOf("BJD"));
 				int DotPosi=(linenameTmpo.indexOf("."));
-				int VTPosi=(linenameTmpo.indexOf("VT"));
-				int SSPosi=(linenameTmpo.indexOf("SS"));
 				
-				if(GMRPosi==-1 && RPosi==-1 && JRCPosi==-1 && BJDPosi==-1 && VTPosi==-1 && SSPosi==-1)
+				if(LineBeginIndex==-1)
 				duplineE=0;
 				
-				if(JRCPosi!=-1)
-				RPosi=-1;
-				
-				if(RPosi!=-1 && GMRPosi==-1){// it is R
+				if(duplineE>0){
+					//	IJ.log("JRCPosi; "+JRCPosi);
 					
-					int UnderS2=(linenameTmpo.indexOf("_", RPosi+2 ));// end of line number
+					int hyphen=(linenameTmpo.indexOf("-", 0 ));
 					
-					LineNo=linenameTmpo.substring(RPosi+2, UnderS2);// R_01A02
-				}else if(GMRPosi!=-1){// it is GMR 
-					int UnderS1=(linenameTmpo.indexOf("_", GMRPosi+1));
-					int UnderS2=(linenameTmpo.indexOf("_", UnderS1+1 ));// end of line number
-					
-					LineNo=linenameTmpo.substring(GMRPosi, UnderS2);// GMR_01A02
-				}else if(GLposi!=-1){// it is GMR 
-					int UnderS1=(linenameTmpo.indexOf("_", GLposi+1));
-					int UnderS2=(linenameTmpo.indexOf("_", UnderS1+1 ));// end of line number
-					
-					LineNo=linenameTmpo.substring(GLposi, UnderS2);// GMR_01A02
-					IJ.log("LineNo; "+LineNo);
-				}else if(VTPosi!=-1){//if VT
-					int UnderS1=(linenameTmpo.indexOf("_", VTPosi+1));
-					LineNo=linenameTmpo.substring(VTPosi, UnderS1);// VT00002
-				}else if(JRCPosi!=-1){
-					int UnderS1=(linenameTmpo.indexOf("_", JRCPosi+1));
-					int UnderS2=(linenameTmpo.indexOf("_", UnderS1+1 ));
-					
-					LineNo=linenameTmpo.substring(JRCPosi, UnderS2);// GMR_01A02
-				}else if(BJDPosi!=-1){
-					int UnderS1=(linenameTmpo.indexOf("_", BJDPosi+1));
-					int UnderS2=(linenameTmpo.indexOf("_", UnderS1+1 ));
-					
-					LineNo=linenameTmpo.substring(BJDPosi, UnderS2);// GMR_01A02
-				}else if(SSPosi!=-1){
-					int UnderS1=(linenameTmpo.indexOf("_", SSPosi+1));
-					int UnderS2=(linenameTmpo.indexOf("_", UnderS1+1 ));
-					
-					LineNo=linenameTmpo.substring(SSPosi, UnderS2);// GMR_01A02	
-				}else{
-					LineNo=linenameTmpo.substring(0, DotPosi);
-				}
+					if(LineBeginIndex!=-1){
+						int UnderS1=(linenameTmpo.indexOf("_", LineBeginIndex+1));
+						int UnderS2=(linenameTmpo.indexOf("_", UnderS1+1 ));// end of line number
+						
+						if(hyphen==-1)
+						LineNo=linenameTmpo.substring(LineBeginIndex, UnderS2);// GMR_01A02
+						else
+						LineNo=linenameTmpo.substring(LineBeginIndex, hyphen);// GMR_01A02
+					}else{
+						LineNo=linenameTmpo.substring(0, DotPosi);
+					}
+				}else//	if(dupline>0){
+				LineNo=linenameTmpo.substring(0, DotPosi);
 				
 				String posipersent2ST;
 				if(labelmethodE==0 || labelmethodE==1){// on top score
@@ -1894,7 +1885,7 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 		
 		//	IJ.log("Done; "+increment+" mean; "+mean3+" Totalmaxvalue; "+totalmax+" desiremean; "+desiremean);
 		
-		if(EMsearch==true && posislice>0){
+		if(EMsearch==true && posislice>2){
 			IJ.showStatus("LM MIP sorting");
 			if(shownormal==true)
 			newimpOri.show();
@@ -1910,11 +1901,12 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 			}
 			
 			//IJ.runMacroFile(""+plugindir+"Macros/CDM_area_measure.ijm");
-		}else if(EMsearch==true && posislice>0){
+		}else {
 			newimpOri.show();
-		}else
+			imask.unlock();
+		}
 		//	IJ.showMessage("no positive hit");
-		imask.unlock();
+		//	imask.unlock();
 		
 		//	System.gc();
 	} //public void run(ImageProcessor ip){
@@ -2892,11 +2884,11 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 							
 							ImageProcessor ipforfunc2 = impSLICE2.getProcessor();
 							
-						//			if(test==1  && isli==1){
-						//				Value1maskIMPfinal.show();
-						//				impSLICE2.show();// 
-						//				return; 
-						//			}
+							//			if(test==1  && isli==1){
+							//				Value1maskIMPfinal.show();
+							//				impSLICE2.show();// 
+							//				return; 
+							//			}
 							
 							for(int ivx2=0; ivx2<sumpx; ivx2++){//multiply images
 								int pix1 = ipforfunc2.get(ivx2);//LM neuron gradient
@@ -3019,12 +3011,12 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 								
 								SampleToMaskflip=SampleToMaskflip+(toomuchexpressionF/3);
 								
-							//		IJ.log("SampleToMaskflip; "+SampleToMaskflip);
-							//					if(test==1 && isli==1){
-							//		impgradient0.show();
-						//			impSLICE2F.show();
-						//		return;
-						//			}
+								//		IJ.log("SampleToMaskflip; "+SampleToMaskflip);
+								//					if(test==1 && isli==1){
+								//		impgradient0.show();
+								//			impSLICE2F.show();
+								//		return;
+								//			}
 								impSLICE2F.unlock();
 								impSLICE2F.close();
 								
