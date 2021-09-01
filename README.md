@@ -4,7 +4,7 @@ FIJI plugins created by Hideo Otsuna and Takashi Kawase.
 
 ## Before starting
  1. Launch and update FIJI.
- 2. Drag and drop `EM_MIP_Search.jar` on FIJI then quit (the plugin installation).  
+ 2. Drag and drop `EM_MIP_Search.jar` on FIJI. Then quit (the plugin installation).  
 	(you can get the .jar file from [here](https://github.com/JaneliaSciComp/EM_MIP_Search/blob/master/EM_MIP_Mask_Search.jar)) 
 
 ## Startup
@@ -14,9 +14,9 @@ Download EM datdaset: (https://www.janelia.org/open-science/color-depth-mip)<br/
 
  
 
-Drag the EM_Hemibrain CDM folder (containing EM hemibrain color depth MIPs) into fiji, use virtual stack option. 
+Drag the EM_Hemibrain CDM folder (containing EM hemibrain color depth MIPs) into FIJI, use virtual stack option. 
 
-## Create neuron mask of interest from the GAL4 color depth MIP (CDM)
+## Neuron mask creation from the GAL4 color depth MIP (CDM)
 1. Open a single tiff that containing the neuron; the image is aligned to JRC2018 template space. (The newly aligned CDM also in https://www.janelia.org/open-science/color-depth-mip)
 2. Trace area of interest on the image (use polygon tool and try to be as accurate as possible).
 3. Edit > Clear Outside.
