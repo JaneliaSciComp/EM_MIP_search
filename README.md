@@ -1,4 +1,5 @@
 # EM_MIP Mask Search [![LinkToJanelia](https://github.com/JaneliaSciComp/EM_MIP_search/blob/master/images/jrc_logo_180x40.png)](https://www.janelia.org)
+This EM MIP Mask Search plugin does bi-directional shape matching between your mask and the EM single neuron CDM dataset. For the shape matching, it requres "gradient files".
 The algorithm created by Hideo Otsuna.  
 FIJI plugins created by Hideo Otsuna and Takashi Kawase.  
 
