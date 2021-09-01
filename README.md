@@ -50,9 +50,9 @@ To make sure the position between the mask (the mask neuron) and hits (EM MIP), 
 
 ## Own EM dataset creation
 1. Create CDM from the swc files with the JRC2018 unisex template transferred. The CDM creation needs SWC_draw2.jar FIJI plugin.
- A. Run the swc_draw2 plugin; you need to set the input folder that has all of the swc with JRC2018 unisex translated
- B. Set output directory.
- C;. Set parameters; JRC2018 Unisex brain; Width 1210, Height 566, Depth 174, Voxel W 0.5189161, Voxel H 0.5189161, Radius 2, Keep OFF ignore swc radius.
- D. The output is PackBits tiff. This format is supported by “Color_MIP_Mask_Search.jar” and “EM_MIP_Mask_Search.jar”.
+ <br>A. Run the swc_draw2 plugin; you need to set the input folder that has all of the swc with JRC2018 unisex translated
+ <br>B. Set output directory.
+ <br>C;. Set parameters; JRC2018 Unisex brain; Width 1210, Height 566, Depth 174, Voxel W 0.5189161, Voxel H 0.5189161, Radius 2, Keep OFF ignore swc radius.
+ <br>D. The output is PackBits tiff. This format is supported by “Color_MIP_Mask_Search.jar” and “EM_MIP_Mask_Search.jar”.
 2. Run the plugin "Gradient_conv_multithread.jar" for the creation of the gradient distance files for the negative shape matching score. The input folder is the EM-CDM files that you made in step 1. 
 3. If your CDM dataset is EM-hemibrain, copy the "MAX_hemi_to_JRC2018U_fineTune.png" image into the gradient folder.
