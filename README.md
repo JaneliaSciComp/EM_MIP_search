@@ -47,3 +47,6 @@ To make sure the position between the mask (the mask neuron) and hits (EM MIP), 
 
 ## Check the EM body ID and the next synaptic connection  
 [Neuprint web site](https://neuprint.janelia.org/)<br/><br/>  
+
+## Own EM dataset creation
+1. create CDM from the swc files with JRC2018 unisex template transfered by using SWC_draw2.jar FIJI plugin
