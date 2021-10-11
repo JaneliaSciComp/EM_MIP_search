@@ -56,7 +56,7 @@ To make sure the position between the mask (the mask neuron) and hits (EM MIP), 
 <br><b>Run the swc_draw2 plugin;</b> 
         <br><b>1-A.</b> Set the input folder that has all of the swc with JRC2018 unisex transferred.
 	<br><b>1-B.</b> Set CDM output directory.
-	<br><b>1-C.</b> Set parameters; JRC2018 Unisex brain; Width 1210, Height 566, Depth 174, Voxel W 0.5189161, Voxel H 0.5189161, Radius 2, Keep OFF ignore swc radius.
+	<br><b>1-C.</b> Set parameters; JRC2018 Unisex brain; Width 1210, Height 566, Depth 174, Voxel W 0.5189161, Voxel H 0.5189161, Voxel D 1, Radius 2, Keep OFF ignore swc radius.
 	<br><b>1-D.</b> The output is PackBits tiff. This format is supported by “Color_MIP_Mask_Search.jar” and “EM_MIP_Mask_Search.jar”.
 	
 4. <b>Run the plugin "Gradient_conv_multithread.jar"</b> for the creation of the gradient distance files for the negative shape matching score. The input folder is the EM-CDM files that you made in step 3. 
