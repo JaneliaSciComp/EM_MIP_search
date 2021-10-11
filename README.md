@@ -51,8 +51,8 @@ To make sure the position between the mask (the mask neuron) and hits (EM MIP), 
 
 ## Own EM dataset creation
 1. To create CDM from the swc files with the JRC2018 unisex template transferred. The CDM creation needs SWC_draw2.jar FIJI plugin. 
-2. <br><br> <b>Set up:</b> copy "PsychedelicRainBow2.lut" in to /Fiji.app/luts/ folder
-<br><br><br> Turn ON "Scijava Jupyter Kernel" in menu: /Help/Update.../Manage upodate sites/. Then restsart Fiji.   
+2. <br> <b>Set up:</b> copy "PsychedelicRainBow2.lut" in to /Fiji.app/luts/ folder
+<br> Turn ON "Scijava Jupyter Kernel" in menu: /Help/Update.../Manage upodate sites/. Then restsart Fiji.   
  <br><b>1-A.</b> Run the swc_draw2 plugin; you need to set the input folder that has all of the swc with JRC2018 unisex transferred.
 	<br><b>1-B.</b> Set output directory.
 	<br><b>1-C.</b> Set parameters; JRC2018 Unisex brain; Width 1210, Height 566, Depth 174, Voxel W 0.5189161, Voxel H 0.5189161, Radius 2, Keep OFF ignore swc radius.
