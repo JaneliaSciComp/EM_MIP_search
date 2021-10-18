@@ -25,7 +25,7 @@ Drag the EM_Hemibrain CDM folder (containing EM hemibrain color depth MIPs) into
 ## Search EM stack with the mask
 Plugins > EM MIP Mask Search    
 ![ScreenShot0](https://github.com/JaneliaSciComp/EM_MIP_search/blob/master/images/screen.png)
-### considerations/ tips:
+### Considerations/ tips:
 - If background is too high in the mask, increase the Threshold for mask (max value is 255).  
 - "ShowFlip hits on a same side" does X-filp of the image with hit by flipping, "Flip" mark will appear on the top center of the image.
 - Pix Color Fluctuation, ±Z slice: better to be 1 for precise matchimng.  
@@ -50,7 +50,7 @@ To make sure the position between the mask (the mask neuron) and hits (EM MIP), 
 [Neuprint web site](https://neuprint.janelia.org/)<br/><br/>  
 
 ## CDM library creation from own EM datasets
-1. To create CDM from the swc files with the JRC2018 unisex template transferred. The CDM creation needs SWC_draw2.jar FIJI plugin. 
+1. To create CDM from the swc files with the JRC2018 unisex template transferred, the CDM creation needs SWC_draw2.jar FIJI plugin. 
 2. <b>Set up:</b> Copy "PsychedelicRainBow2.lut" into /Fiji.app/luts/ folder. 
 <br>Copy "swc_draw2.jar" & "Gradient_conv_multithread.jar" into /Fiji.app/plugins/ folder
 <br> Turn ON "Scijava Jupyter Kernel" in menu: /Help/Update.../Manage upodate sites/. Then restsart Fiji.   
