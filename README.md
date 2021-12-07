@@ -18,8 +18,8 @@ Download EM datdaset: (https://www.janelia.org/open-science/color-depth-mip)<br/
 Drag the EM_Hemibrain CDM folder (containing EM hemibrain color depth MIPs) into FIJI, use virtual stack option. 
 
 ## Neuron mask creation from the GAL4 color depth MIP (CDM)
-1. Open a single tiff that containing the neuron; the image is aligned to JRC2018 template space. (The newly aligned CDM also in https://www.janelia.org/open-science/color-depth-mip)
-2. Trace area of interest on the image (use polygon tool and try to be as accurate as possible).
+1. Open a single CDM that containing the neuron; the CDM image needed to be aligned to JRC2018 unisex template space. (The newly aligned CDM also in https://www.janelia.org/open-science/color-depth-mip)
+2. Write ROI on the image (use polygon tool and try to be as accurate as possible).
 3. Edit > Clear Outside.
 
 ## Search EM stack with the mask
