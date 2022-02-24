@@ -1129,8 +1129,6 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 				if(LineBeginIndex==-1)
 				LineBeginIndex=(linenameTmpo.indexOf("VT"));
 				if(LineBeginIndex==-1)
-				LineBeginIndex=(linenameTmpo.indexOf("JRC_"));
-				if(LineBeginIndex==-1)
 				LineBeginIndex=(linenameTmpo.indexOf("_TR_"));
 				if(LineBeginIndex==-1)
 				LineBeginIndex=(linenameTmpo.indexOf("R_"));
@@ -1143,30 +1141,35 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 				if(LineBeginIndex==-1)
 				LineBeginIndex=(linenameTmpo.indexOf("BJD"));
 				if(LineBeginIndex==-1)
-				LineBeginIndex=(linenameTmpo.indexOf("SS"));
-				if(LineBeginIndex==-1)
 				LineBeginIndex=(linenameTmpo.indexOf("UAH"));
 				if(LineBeginIndex==-1)
 				LineBeginIndex=(linenameTmpo.indexOf("OL"));
+				if(LineBeginIndex==-1)
+				LineBeginIndex=(linenameTmpo.indexOf("JRC_"));
+				else if(LineBeginIndex==-1)
+				LineBeginIndex=(linenameTmpo.indexOf("SS"));
 				
 				int DotPosi=(linenameTmpo.indexOf("."));
 				
 				if(LineBeginIndex==-1)
-				duplineE=0;
+				LineBeginIndex=0;
 				
 				if(duplineE>0){
-					//	IJ.log("JRCPosi; "+JRCPosi);
+			
 					
 					int hyphen=(linenameTmpo.indexOf("-", 0 ));
 					
 					if(LineBeginIndex!=-1){
-						int UnderS1=(linenameTmpo.indexOf("_", LineBeginIndex+1));
-						int UnderS2=(linenameTmpo.indexOf("_", UnderS1+1 ));// end of line number
 						
-						if(hyphen==-1)
-						LineNo=linenameTmpo.substring(LineBeginIndex, UnderS2);// GMR_01A02
-						else
-						LineNo=linenameTmpo.substring(LineBeginIndex, hyphen);// GMR_01A02
+						if(hyphen==-1){
+							int UnderS1=(linenameTmpo.indexOf("_", LineBeginIndex+1));
+							int UnderS2=(linenameTmpo.indexOf("_", UnderS1+1 ));// end of line number
+							if(UnderS2>UnderS1)
+							LineNo=linenameTmpo.substring(LineBeginIndex, UnderS2);// GMR_01A02
+							else
+							LineNo=linenameTmpo.substring(0, DotPosi);
+						}else
+						LineNo=linenameTmpo.substring(LineBeginIndex, hyphen);// GMR_01A02	
 					}else{
 						LineNo=linenameTmpo.substring(0, DotPosi);
 					}
@@ -1204,7 +1207,7 @@ public class From_EM_to_LM_MIP_Search implements PlugInFilter
 				for(int LineInt=0; LineInt<posislice; LineInt++)
 				
 				if(DUPlogonE==true)
-				//		IJ.log(LineInt+"  "+LineNameArray[LineInt]);
+						IJ.log(LineInt+"  "+LineNameArray[LineInt]);
 				
 				for(int Fposi=0; Fposi<=posislice; Fposi++){
 					
