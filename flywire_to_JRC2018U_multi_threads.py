@@ -11,9 +11,13 @@ def process_swc(args):
     filename = flywire_swc_path.split('/')[-1]
     ID = filename.split('.')[0]
 
-    transformed_fafb = navis.xform_brain(neuron * 1000, source='FLYWIRE', target='FAFB14', via='FAFB14raw')
-    transformed_neuron = navis.xform_brain(transformed_fafb, source='FAFB14', target='JRC2018U')
-
+    #For v630
+    #transformed_fafb = navis.xform_brain(neuron * 1000, source='FLYWIRE', target='FAFB14', via='FAFB14raw')
+    #transformed_neuron = navis.xform_brain(transformed_fafb, source='FAFB14', target='JRC2018U')
+    
+    #For 783
+    transformed_neuron = navis.xform_brain(neuron, source='FLYWIRE', target='JRC2018U')
+    
     trans_swc_path = os.path.join(savedir, f"{ID}_JRC2018U.swc")
     navis.write_swc(transformed_neuron, trans_swc_path)
 
