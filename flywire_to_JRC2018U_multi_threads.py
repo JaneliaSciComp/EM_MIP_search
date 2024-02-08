@@ -5,7 +5,7 @@ import os
 from multiprocessing import Pool
 import shutil
 
-#The following line need to run 1st time usage only, so big file size & takes time until download finish 
+#The following line need to run 1st time usage only, so big file size (8GB) & takes time until download finish 
 #flybrains.download_jrc_transforms()
 
 def process_swc(args):
